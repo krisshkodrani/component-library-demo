@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { makeMockEvents, type Event } from '../shared'
 import { DataGrid, type ColumnDef } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
@@ -13,7 +14,11 @@ const severityVariantMap: Record<
 }
 
 export function DemoApp() {
-  const gridEvents = makeMockEvents(200)
+  const [simulateEmpty, setSimulateEmpty] = useState(false)
+  const [simulateLoading, setSimulateLoading] = useState(false)
+  const [simulateError, setSimulateError] = useState(false)
+
+  const gridEvents = simulateEmpty ? [] : makeMockEvents(200)
   const timelineEvents = makeMockEvents(60)
   const gridColumns: ColumnDef<Event>[] = [
     {
@@ -55,7 +60,33 @@ export function DemoApp() {
             <h2 className="text-lg font-semibold text-slate-900">DataGrid</h2>
             <p className="text-sm text-slate-600">Events: {gridEvents.length}</p>
           </header>
-          <DataGrid rows={gridEvents} columns={gridColumns} />
+          <div className="mb-4 flex flex-wrap gap-2">
+            <Button
+              variant={simulateEmpty ? 'primary' : 'secondary'}
+              onClick={() => setSimulateEmpty((current) => !current)}
+            >
+              Simulate empty
+            </Button>
+            <Button
+              variant={simulateLoading ? 'primary' : 'secondary'}
+              onClick={() => setSimulateLoading((current) => !current)}
+            >
+              Simulate loading
+            </Button>
+            <Button
+              variant={simulateError ? 'primary' : 'secondary'}
+              onClick={() => setSimulateError((current) => !current)}
+            >
+              Simulate error
+            </Button>
+          </div>
+          <DataGrid
+            rows={gridEvents}
+            columns={gridColumns}
+            isLoading={simulateLoading}
+            error={simulateError ? 'Unable to load events. Please retry.' : null}
+            emptyMessage="No matching events."
+          />
         </article>
 
         <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

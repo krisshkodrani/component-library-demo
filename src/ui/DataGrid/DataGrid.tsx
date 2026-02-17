@@ -74,11 +74,17 @@ export function DataGrid<T>({
   columns,
   pageSize = 25,
   initialPage = 1,
+  isLoading = false,
+  error = null,
+  emptyMessage = 'No results.',
 }: {
   rows: T[]
   columns: ColumnDef<T>[]
   pageSize?: number
   initialPage?: number
+  isLoading?: boolean
+  error?: string | null
+  emptyMessage?: string
 }) {
   const safePageSize = Math.max(1, Math.floor(pageSize))
   const totalRows = rows.length
@@ -226,8 +232,7 @@ export function DataGrid<T>({
           <DropdownMenuContent align="end">
             {hideableColumns.map((column) => {
               const isVisible = !hiddenColumnIds.has(column.id)
-              const disableHide =
-                isVisible && visibleColumns.length <= 1
+              const disableHide = isVisible && visibleColumns.length <= 1
 
               return (
                 <DropdownMenuCheckboxItem
@@ -250,84 +255,103 @@ export function DataGrid<T>({
         Showing {totalFilteredRows} of {totalRows}
       </p>
 
-      <div className="overflow-auto rounded-lg border border-slate-200">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              {visibleColumns.map((column) => (
-                <th
-                  key={column.id}
-                  scope="col"
-                  className="border-b border-slate-200 px-4 py-2 font-semibold text-slate-700"
-                >
-                  {(() => {
-                    const isSortable = column.sortable ?? Boolean(column.sortValue)
-                    const isActive = sortState?.columnId === column.id
-                    const indicator = isActive
-                      ? sortState?.direction === 'asc'
-                        ? '^'
-                        : 'v'
-                      : ''
+      {error ? (
+        <div
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700"
+          role="alert"
+        >
+          {error}
+        </div>
+      ) : isLoading ? (
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
+          Loading...
+        </div>
+      ) : sortedRows.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+          {emptyMessage}
+        </div>
+      ) : (
+        <>
+          <div className="overflow-auto rounded-lg border border-slate-200">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  {visibleColumns.map((column) => (
+                    <th
+                      key={column.id}
+                      scope="col"
+                      className="border-b border-slate-200 px-4 py-2 font-semibold text-slate-700"
+                    >
+                      {(() => {
+                        const isSortable = column.sortable ?? Boolean(column.sortValue)
+                        const isActive = sortState?.columnId === column.id
+                        const indicator = isActive
+                          ? sortState?.direction === 'asc'
+                            ? '^'
+                            : 'v'
+                          : ''
 
-                    if (!isSortable) {
-                      return column.header
-                    }
+                        if (!isSortable) {
+                          return column.header
+                        }
 
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => handleSortToggle(column)}
-                        className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                      >
-                        <span>{column.header}</span>
-                        <span
-                          className="w-3 text-xs text-slate-500"
-                          aria-hidden="true"
-                        >
-                          {indicator}
-                        </span>
-                      </button>
-                    )
-                  })()}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-b border-slate-200 hover:bg-slate-50">
-                {visibleColumns.map((column) => (
-                  <td key={column.id} className="px-4 py-2 text-slate-700">
-                    {column.accessor(row)}
-                  </td>
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handleSortToggle(column)}
+                            className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                          >
+                            <span>{column.header}</span>
+                            <span
+                              className="w-3 text-xs text-slate-500"
+                              aria-hidden="true"
+                            >
+                              {indicator}
+                            </span>
+                          </button>
+                        )
+                      })()}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="border-b border-slate-200 hover:bg-slate-50">
+                    {visibleColumns.map((column) => (
+                      <td key={column.id} className="px-4 py-2 text-slate-700">
+                        {column.accessor(row)}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          variant="secondary"
-          onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={safePage <= 1}
-          className="px-3 py-1.5 text-xs"
-        >
-          Previous
-        </Button>
-        <p className="text-xs text-slate-600">
-          Page {safePage} of {totalPages}
-        </p>
-        <Button
-          variant="secondary"
-          onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-          disabled={safePage >= totalPages}
-          className="px-3 py-1.5 text-xs"
-        >
-          Next
-        </Button>
-      </div>
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={safePage <= 1}
+              className="px-3 py-1.5 text-xs"
+            >
+              Previous
+            </Button>
+            <p className="text-xs text-slate-600">
+              Page {safePage} of {totalPages}
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={safePage >= totalPages}
+              className="px-3 py-1.5 text-xs"
+            >
+              Next
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
