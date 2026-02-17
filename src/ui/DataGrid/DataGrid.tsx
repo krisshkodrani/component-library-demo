@@ -9,49 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '../radix/DropdownMenu'
 import type { ColumnDef } from './types'
-
-type SortState = { columnId: string; direction: 'asc' | 'desc' } | null
-
-type SortableValue = string | number | boolean | null | undefined
-
-function compareValues(a: SortableValue, b: SortableValue): number {
-  const aMissing = a === null || a === undefined
-  const bMissing = b === null || b === undefined
-
-  if (aMissing && bMissing) return 0
-  if (aMissing) return 1
-  if (bMissing) return -1
-
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b
-  }
-
-  if (typeof a === 'boolean' && typeof b === 'boolean') {
-    if (a === b) return 0
-    return a ? 1 : -1
-  }
-
-  return String(a).localeCompare(String(b))
-}
-
-function getFilterText<T>(column: ColumnDef<T>, row: T): string {
-  if (column.filterValue) {
-    return column.filterValue(row)
-  }
-
-  if (column.sortValue) {
-    const value = column.sortValue(row)
-    if (
-      typeof value === 'string' ||
-      typeof value === 'number' ||
-      typeof value === 'boolean'
-    ) {
-      return String(value)
-    }
-  }
-
-  return ''
-}
+import { applyGlobalFilter, applySort, paginate, type SortState } from './utils'
 
 function getInitialHiddenColumnIds<T>(columns: ColumnDef<T>[]): Set<string> {
   const hidden = new Set<string>()
@@ -116,59 +74,24 @@ export function DataGrid<T>({
     [columns],
   )
 
-  const normalizedFilter = globalFilter.trim().toLowerCase()
+  const filteredRows = useMemo(
+    () => applyGlobalFilter(rows, visibleColumns, globalFilter),
+    [rows, visibleColumns, globalFilter],
+  )
 
-  const filteredRows = useMemo(() => {
-    if (!normalizedFilter) {
-      return rows
-    }
-
-    return rows.filter((row) =>
-      visibleColumns.some((column) =>
-        getFilterText(column, row).toLowerCase().includes(normalizedFilter),
-      ),
-    )
-  }, [rows, visibleColumns, normalizedFilter])
-
-  const sortedRows = useMemo(() => {
-    if (!sortState) {
-      return filteredRows
-    }
-
-    const activeColumn = visibleColumns.find(
-      (column) => column.id === sortState.columnId,
-    )
-    if (!activeColumn?.sortValue) {
-      return filteredRows
-    }
-
-    const directionFactor = sortState.direction === 'asc' ? 1 : -1
-
-    return filteredRows
-      .map((row, idx) => ({ row, idx }))
-      .sort((a, b) => {
-        const aValue = activeColumn.sortValue?.(a.row)
-        const bValue = activeColumn.sortValue?.(b.row)
-        const diff = compareValues(aValue, bValue)
-
-        if (diff !== 0) {
-          return diff * directionFactor
-        }
-
-        return a.idx - b.idx
-      })
-      .map((entry) => entry.row)
-  }, [filteredRows, visibleColumns, sortState])
+  const sortedRows = useMemo(
+    () => applySort(filteredRows, sortState, visibleColumns),
+    [filteredRows, sortState, visibleColumns],
+  )
 
   const totalFilteredRows = filteredRows.length
   const totalPages = Math.max(1, Math.ceil(totalFilteredRows / safePageSize))
   const safePage = Math.min(page, totalPages)
 
-  const pageRows = useMemo(() => {
-    const start = (safePage - 1) * safePageSize
-    const end = safePage * safePageSize
-    return sortedRows.slice(start, end)
-  }, [sortedRows, safePage, safePageSize])
+  const pageRows = useMemo(
+    () => paginate(sortedRows, safePage, safePageSize),
+    [sortedRows, safePage, safePageSize],
+  )
 
   function handleSortToggle(column: ColumnDef<T>) {
     const isSortable = column.sortable ?? Boolean(column.sortValue)

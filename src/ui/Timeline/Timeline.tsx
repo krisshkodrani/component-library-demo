@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Badge } from '../primitives/Badge'
 import { groupEventsByDay } from './grouping'
+import { findActivePosition, getAnnouncement, getNextPosition } from './navigation'
 import type { TimelineEvent } from './types'
 
 const severityVariantMap: Record<
@@ -25,59 +26,29 @@ export function Timeline({
   const [activeId, setActiveId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({})
-  const flatItems = useMemo(
-    () =>
-      groups.flatMap((group) =>
-        group.items.map((item, itemIndex) => ({
-          id: item.id,
-          groupLabel: group.label,
-          title: item.title,
-          timeLabel: new Date(item.dateISO).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          itemPosition: itemIndex + 1,
-          groupSize: group.items.length,
-        })),
-      ),
-    [groups],
-  )
-  const itemMetaById = useMemo(
-    () =>
-      Object.fromEntries(flatItems.map((item) => [item.id, item])) as Record<
-        string,
-        (typeof flatItems)[number]
-      >,
-    [flatItems],
-  )
 
   function announceForId(id: string) {
     if (activeId === id) {
       return
     }
 
-    const itemMeta = itemMetaById[id]
-    if (!itemMeta) {
+    const activePos = findActivePosition(groups, id)
+    if (!activePos) {
       return
     }
 
     setActiveId(id)
-    setAnnouncement(
-      `${itemMeta.groupLabel} - ${itemMeta.title}, ${itemMeta.itemPosition} of ${itemMeta.groupSize}, ${itemMeta.timeLabel}`,
-    )
+    setAnnouncement(getAnnouncement(groups, activePos))
   }
 
-  function focusByOffset(currentId: string, offset: number) {
-    const currentIndex = flatItems.findIndex((item) => item.id === currentId)
-    if (currentIndex === -1) {
+  function focusByKey(currentId: string, key: string) {
+    const currentPos = findActivePosition(groups, currentId)
+    const nextPos = getNextPosition(groups, currentPos, key)
+    if (!nextPos) {
       return
     }
 
-    const targetIndex = Math.min(
-      flatItems.length - 1,
-      Math.max(0, currentIndex + offset),
-    )
-    const targetId = flatItems[targetIndex]?.id
+    const targetId = groups[nextPos.groupIndex]?.items[nextPos.itemIndex]?.id
     if (!targetId) {
       return
     }
@@ -127,13 +98,13 @@ export function Timeline({
 
                   if (eventKey.key === 'ArrowDown' || eventKey.key === 'ArrowRight') {
                     eventKey.preventDefault()
-                    focusByOffset(event.id, 1)
+                    focusByKey(event.id, eventKey.key)
                     return
                   }
 
                   if (eventKey.key === 'ArrowUp' || eventKey.key === 'ArrowLeft') {
                     eventKey.preventDefault()
-                    focusByOffset(event.id, -1)
+                    focusByKey(event.id, eventKey.key)
                   }
                 }}
               >
