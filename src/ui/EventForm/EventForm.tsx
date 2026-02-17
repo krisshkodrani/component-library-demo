@@ -21,6 +21,11 @@ type EventFormProps = {
   onCancel: () => void
 }
 
+type EventFormErrors = {
+  title?: string
+  dateISO?: string
+}
+
 export function EventForm({
   mode,
   initialValue,
@@ -37,34 +42,69 @@ export function EventForm({
   const [dateInputValue, setDateInputValue] = useState(
     toLocalDateTimeInputValue(initialDateISO),
   )
+  const [errors, setErrors] = useState<EventFormErrors>({})
+
+  function validate(nextDraft: EventDraft, nextDateInputValue: string): EventFormErrors {
+    const nextErrors: EventFormErrors = {}
+
+    if (!nextDraft.title.trim()) {
+      nextErrors.title = 'Title is required.'
+    }
+
+    if (!nextDateInputValue.trim()) {
+      nextErrors.dateISO = 'Date and time are required.'
+    } else {
+      const date = new Date(nextDateInputValue)
+      if (Number.isNaN(date.getTime())) {
+        nextErrors.dateISO = 'Please enter a valid date and time.'
+      }
+    }
+
+    return nextErrors
+  }
 
   return (
     <form
       className="space-y-4"
       onSubmit={(event) => {
         event.preventDefault()
+        const nextErrors = validate(draft, dateInputValue)
+        if (Object.keys(nextErrors).length > 0) {
+          setErrors(nextErrors)
+          return
+        }
+
+        setErrors({})
         onSave(draft)
       }}
     >
-      <Field label="Title" htmlFor="event-form-title">
+      <Field label="Title" htmlFor="event-form-title" error={errors.title}>
         <Input
           id="event-form-title"
           value={draft.title}
-          onChange={(event) =>
+          aria-invalid={Boolean(errors.title)}
+          onChange={(event) => {
             setDraft((current) => ({ ...current, title: event.target.value }))
-          }
+            if (errors.title) {
+              setErrors((current) => ({ ...current, title: undefined }))
+            }
+          }}
           placeholder="Event title"
         />
       </Field>
 
-      <Field label="Date & Time" htmlFor="event-form-date">
+      <Field label="Date & Time" htmlFor="event-form-date" error={errors.dateISO}>
         <Input
           id="event-form-date"
           type="datetime-local"
           value={dateInputValue}
+          aria-invalid={Boolean(errors.dateISO)}
           onChange={(event) => {
             const value = event.target.value
             setDateInputValue(value)
+            if (errors.dateISO) {
+              setErrors((current) => ({ ...current, dateISO: undefined }))
+            }
             const nextDate = new Date(value)
             if (!Number.isNaN(nextDate.getTime())) {
               setDraft((current) => ({
