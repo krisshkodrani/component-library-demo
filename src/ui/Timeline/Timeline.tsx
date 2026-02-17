@@ -1,3 +1,4 @@
+import { useMemo, useRef, useState } from 'react'
 import { Badge } from '../primitives/Badge'
 import { groupEventsByDay } from './grouping'
 import type { TimelineEvent } from './types'
@@ -21,9 +22,75 @@ export function Timeline({
   onSelect?: (id: string) => void
 }) {
   const groups = groupEventsByDay(events)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [announcement, setAnnouncement] = useState('')
+  const itemRefs = useRef<Record<string, HTMLLIElement | null>>({})
+  const flatItems = useMemo(
+    () =>
+      groups.flatMap((group) =>
+        group.items.map((item, itemIndex) => ({
+          id: item.id,
+          groupLabel: group.label,
+          title: item.title,
+          timeLabel: new Date(item.dateISO).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          itemPosition: itemIndex + 1,
+          groupSize: group.items.length,
+        })),
+      ),
+    [groups],
+  )
+  const itemMetaById = useMemo(
+    () =>
+      Object.fromEntries(flatItems.map((item) => [item.id, item])) as Record<
+        string,
+        (typeof flatItems)[number]
+      >,
+    [flatItems],
+  )
+
+  function announceForId(id: string) {
+    if (activeId === id) {
+      return
+    }
+
+    const itemMeta = itemMetaById[id]
+    if (!itemMeta) {
+      return
+    }
+
+    setActiveId(id)
+    setAnnouncement(
+      `${itemMeta.groupLabel} - ${itemMeta.title}, ${itemMeta.itemPosition} of ${itemMeta.groupSize}, ${itemMeta.timeLabel}`,
+    )
+  }
+
+  function focusByOffset(currentId: string, offset: number) {
+    const currentIndex = flatItems.findIndex((item) => item.id === currentId)
+    if (currentIndex === -1) {
+      return
+    }
+
+    const targetIndex = Math.min(
+      flatItems.length - 1,
+      Math.max(0, currentIndex + offset),
+    )
+    const targetId = flatItems[targetIndex]?.id
+    if (!targetId) {
+      return
+    }
+
+    itemRefs.current[targetId]?.focus()
+    announceForId(targetId)
+  }
 
   return (
     <div className="space-y-4">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </div>
       {groups.map((group) => (
         <section key={group.dayKey} className="space-y-2">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
@@ -33,7 +100,15 @@ export function Timeline({
             {group.items.map((event) => (
               <li
                 key={event.id}
-                onClick={onSelect ? () => onSelect(event.id) : undefined}
+                ref={(element) => {
+                  itemRefs.current[event.id] = element
+                }}
+                onClick={(eventClick) => {
+                  announceForId(event.id)
+                  eventClick.currentTarget.focus()
+                  onSelect?.(event.id)
+                }}
+                onFocus={() => announceForId(event.id)}
                 className={`rounded-lg border px-3 py-2 ${
                   onSelect ? 'cursor-pointer hover:bg-slate-100' : ''
                 } ${
@@ -43,13 +118,22 @@ export function Timeline({
                 } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2`.trim()}
                 tabIndex={onSelect ? 0 : -1}
                 onKeyDown={(eventKey) => {
-                  if (!onSelect) {
+                  if (eventKey.key === 'Enter' || eventKey.key === ' ') {
+                    eventKey.preventDefault()
+                    onSelect?.(event.id)
+                    announceForId(event.id)
                     return
                   }
 
-                  if (eventKey.key === 'Enter' || eventKey.key === ' ') {
+                  if (eventKey.key === 'ArrowDown' || eventKey.key === 'ArrowRight') {
                     eventKey.preventDefault()
-                    onSelect(event.id)
+                    focusByOffset(event.id, 1)
+                    return
+                  }
+
+                  if (eventKey.key === 'ArrowUp' || eventKey.key === 'ArrowLeft') {
+                    eventKey.preventDefault()
+                    focusByOffset(event.id, -1)
                   }
                 }}
               >
