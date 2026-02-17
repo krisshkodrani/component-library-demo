@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { makeMockEvents } from '../shared'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 import { Field } from '../ui/primitives/Field'
@@ -23,6 +24,8 @@ import {
 
 export function DemoApp() {
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const gridEvents = useMemo(() => makeMockEvents(200), [])
+  const timelineEvents = useMemo(() => makeMockEvents(60), [])
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-8 px-6 py-12">
@@ -57,6 +60,11 @@ export function DemoApp() {
           </Field>
 
           <Badge variant="warning">Beta</Badge>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <p>Grid events: {gridEvents.length}</p>
+            <p>Timeline events: {timelineEvents.length}</p>
+          </div>
 
           <div className="flex items-center gap-3">
             <Dialog>
