@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
@@ -43,6 +43,8 @@ export function EventForm({
     toLocalDateTimeInputValue(initialDateISO),
   )
   const [errors, setErrors] = useState<EventFormErrors>({})
+  const titleRef = useRef<HTMLInputElement | null>(null)
+  const dateRef = useRef<HTMLInputElement | null>(null)
 
   function validate(nextDraft: EventDraft, nextDateInputValue: string): EventFormErrors {
     const nextErrors: EventFormErrors = {}
@@ -71,6 +73,16 @@ export function EventForm({
         const nextErrors = validate(draft, dateInputValue)
         if (Object.keys(nextErrors).length > 0) {
           setErrors(nextErrors)
+          queueMicrotask(() => {
+            if (nextErrors.title) {
+              titleRef.current?.focus()
+              return
+            }
+
+            if (nextErrors.dateISO) {
+              dateRef.current?.focus()
+            }
+          })
           return
         }
 
@@ -80,6 +92,7 @@ export function EventForm({
     >
       <Field label="Title" htmlFor="event-form-title" error={errors.title}>
         <Input
+          ref={titleRef}
           id="event-form-title"
           value={draft.title}
           aria-invalid={Boolean(errors.title)}
@@ -95,6 +108,7 @@ export function EventForm({
 
       <Field label="Date & Time" htmlFor="event-form-date" error={errors.dateISO}>
         <Input
+          ref={dateRef}
           id="event-form-date"
           type="datetime-local"
           value={dateInputValue}
