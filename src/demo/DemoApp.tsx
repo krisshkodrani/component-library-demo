@@ -114,7 +114,11 @@ export function DemoApp() {
             </p>
           </header>
           <div className="min-h-0 flex-1 overflow-auto pr-1">
-            <Timeline events={timelineEvents} />
+            <Timeline
+              events={timelineEvents}
+              selectedId={selectedEventId}
+              onSelect={(id) => setSelectedEventId(id)}
+            />
           </div>
         </article>
       </section>
