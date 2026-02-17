@@ -136,72 +136,74 @@ export function DataGrid<T>({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="w-full sm:max-w-sm">
-          <Field label="Search" htmlFor="grid-search">
-            <Input
-              id="grid-search"
-              placeholder="Search rows..."
-              value={globalFilter}
-              onChange={(event) => {
-                setGlobalFilter(event.target.value)
-                setPage(1)
-              }}
-            />
-          </Field>
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="w-full sm:max-w-sm">
+            <Field label="Search" htmlFor="grid-search">
+              <Input
+                id="grid-search"
+                placeholder="Search rows..."
+                value={globalFilter}
+                onChange={(event) => {
+                  setGlobalFilter(event.target.value)
+                  setPage(1)
+                }}
+              />
+            </Field>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" className="self-start sm:self-auto">
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {hideableColumns.map((column) => {
+                const isVisible = !hiddenColumnIds.has(column.id)
+                const disableHide = isVisible && visibleColumns.length <= 1
+
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    checked={isVisible}
+                    disabled={disableHide}
+                    onCheckedChange={(checked) =>
+                      handleColumnVisibilityChange(column.id, checked === true)
+                    }
+                  >
+                    {column.header}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" className="self-start sm:self-auto">
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {hideableColumns.map((column) => {
-              const isVisible = !hiddenColumnIds.has(column.id)
-              const disableHide = isVisible && visibleColumns.length <= 1
-
-              return (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={isVisible}
-                  disabled={disableHide}
-                  onCheckedChange={(checked) =>
-                    handleColumnVisibilityChange(column.id, checked === true)
-                  }
-                >
-                  {column.header}
-                </DropdownMenuCheckboxItem>
-              )
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <p className="text-xs font-medium text-slate-600">
+          Showing {totalFilteredRows} of {totalRows}
+        </p>
       </div>
 
-      <p className="text-xs font-medium text-slate-600">
-        Showing {totalFilteredRows} of {totalRows}
-      </p>
-
-      {error ? (
-        <div
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700"
-          role="alert"
-        >
-          {error}
-        </div>
-      ) : isLoading ? (
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
-          Loading...
-        </div>
-      ) : sortedRows.length === 0 ? (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-          {emptyMessage}
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="min-h-0 flex-1">
+        {error ? (
+          <div
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700"
+            role="alert"
+          >
+            {error}
+          </div>
+        ) : isLoading ? (
+          <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
+            Loading...
+          </div>
+        ) : sortedRows.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+            {emptyMessage}
+          </div>
+        ) : (
+          <div className="h-full overflow-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                 <tr>
@@ -267,30 +269,32 @@ export function DataGrid<T>({
               </tbody>
             </table>
           </div>
+        )}
+      </div>
 
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={safePage <= 1}
-              className="px-3 py-1.5 text-xs"
-            >
-              Previous
-            </Button>
-            <p className="text-xs text-slate-600">
-              Page {safePage} of {totalPages}
-            </p>
-            <Button
-              variant="secondary"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={safePage >= totalPages}
-              className="px-3 py-1.5 text-xs"
-            >
-              Next
-            </Button>
-          </div>
-        </>
-      )}
+      {!error && !isLoading && sortedRows.length > 0 ? (
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={safePage <= 1}
+            className="px-3 py-1.5 text-xs"
+          >
+            Previous
+          </Button>
+          <p className="text-xs text-slate-600">
+            Page {safePage} of {totalPages}
+          </p>
+          <Button
+            variant="secondary"
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={safePage >= totalPages}
+            className="px-3 py-1.5 text-xs"
+          >
+            Next
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

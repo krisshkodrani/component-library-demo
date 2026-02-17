@@ -139,7 +139,7 @@ export function DemoApp() {
               Simulate error
             </Button>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto pr-1">
+          <div className="min-h-0 flex-1">
             <DataGrid
               rows={gridEvents}
               columns={gridColumns}
