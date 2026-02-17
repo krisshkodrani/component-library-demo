@@ -22,14 +22,15 @@ const severityVariantMap: Record<
 }
 
 export function DemoApp() {
+  const [events, setEvents] = useState<Event[]>(() => makeMockEvents(200))
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [simulateEmpty, setSimulateEmpty] = useState(false)
   const [simulateLoading, setSimulateLoading] = useState(false)
   const [simulateError, setSimulateError] = useState(false)
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
 
-  const gridEvents = simulateEmpty ? [] : makeMockEvents(200)
-  const timelineEvents = makeMockEvents(60)
+  const gridEvents = simulateEmpty ? [] : events
+  const timelineEvents = events.slice(0, 60)
   const gridColumns: ColumnDef<Event>[] = [
     {
       id: 'title',
@@ -87,7 +88,19 @@ export function DemoApp() {
               mode="add"
               autoFocusTitle
               onSave={(draft) => {
-                console.log('New event save', draft)
+                const nextId =
+                  globalThis.crypto?.randomUUID?.() ??
+                  `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+                const newEvent: Event = {
+                  id: nextId,
+                  title: draft.title,
+                  dateISO: draft.dateISO,
+                  description: draft.description,
+                  severity: draft.severity,
+                }
+                setEvents((prev) => [newEvent, ...prev])
+                setSelectedEventId(nextId)
+                console.log('New event save', newEvent)
                 setIsNewEventOpen(false)
               }}
               onCancel={() => {
