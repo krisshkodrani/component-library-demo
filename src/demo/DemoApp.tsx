@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { makeMockEvents, type Event } from '../shared'
-import { DataGrid, type ColumnDef } from '../ui'
+import { DataGrid, Timeline, type ColumnDef } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 
@@ -100,9 +100,7 @@ export function DemoApp() {
               Events: {timelineEvents.length}
             </p>
           </header>
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-            Component coming next.
-          </div>
+          <Timeline events={timelineEvents} />
         </article>
       </section>
     </main>
