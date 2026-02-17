@@ -49,9 +49,20 @@ export function DemoApp() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Genetec Take-Home Demo
-        </h1>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Event Management Demo
+          </h1>
+          <p className="text-sm text-slate-600">DataGrid + Timeline + Event Form</p>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-700">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">
+              Grid: {gridEvents.length}
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">
+              Timeline: {timelineEvents.length}
+            </span>
+          </div>
+        </div>
         <Button variant="primary">New Event</Button>
       </header>
 
