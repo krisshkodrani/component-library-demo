@@ -43,6 +43,7 @@ export function EventForm({
     toLocalDateTimeInputValue(initialDateISO),
   )
   const [errors, setErrors] = useState<EventFormErrors>({})
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement | null>(null)
   const dateRef = useRef<HTMLInputElement | null>(null)
 
@@ -73,6 +74,7 @@ export function EventForm({
         const nextErrors = validate(draft, dateInputValue)
         if (Object.keys(nextErrors).length > 0) {
           setErrors(nextErrors)
+          setSuccessMessage(null)
           queueMicrotask(() => {
             if (nextErrors.title) {
               titleRef.current?.focus()
@@ -88,8 +90,18 @@ export function EventForm({
 
         setErrors({})
         onSave(draft)
+        setSuccessMessage(mode === 'add' ? 'Event created.' : 'Event saved.')
       }}
     >
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="min-h-5 text-sm text-emerald-700"
+      >
+        {successMessage ?? ''}
+      </div>
+
       <Field label="Title" htmlFor="event-form-title" error={errors.title}>
         <Input
           ref={titleRef}
@@ -98,6 +110,9 @@ export function EventForm({
           aria-invalid={Boolean(errors.title)}
           onChange={(event) => {
             setDraft((current) => ({ ...current, title: event.target.value }))
+            if (successMessage) {
+              setSuccessMessage(null)
+            }
             if (errors.title) {
               setErrors((current) => ({ ...current, title: undefined }))
             }
@@ -116,6 +131,9 @@ export function EventForm({
           onChange={(event) => {
             const value = event.target.value
             setDateInputValue(value)
+            if (successMessage) {
+              setSuccessMessage(null)
+            }
             if (errors.dateISO) {
               setErrors((current) => ({ ...current, dateISO: undefined }))
             }
@@ -134,7 +152,7 @@ export function EventForm({
         <select
           id="event-form-severity"
           value={draft.severity ?? ''}
-          onChange={(event) =>
+          onChange={(event) => {
             setDraft((current) => ({
               ...current,
               severity:
@@ -142,7 +160,10 @@ export function EventForm({
                   ? undefined
                   : (event.target.value as EventDraft['severity']),
             }))
-          }
+            if (successMessage) {
+              setSuccessMessage(null)
+            }
+          }}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
           <option value="">None</option>
@@ -156,12 +177,15 @@ export function EventForm({
         <textarea
           id="event-form-description"
           value={draft.description ?? ''}
-          onChange={(event) =>
+          onChange={(event) => {
             setDraft((current) => ({
               ...current,
               description: event.target.value,
             }))
-          }
+            if (successMessage) {
+              setSuccessMessage(null)
+            }
+          }}
           rows={3}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           placeholder="Optional details"
