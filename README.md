@@ -1,73 +1,47 @@
-# React + TypeScript + Vite
+# Genetec React Technical Task
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Setup & Run
+- Install dependencies: `npm install`
+- Start dev server: `npm run dev`
+- Build for production: `npm run build`
+- Preview production build: `npm run preview`
 
-Currently, two official plugins are available:
+## Project Structure
+- `src/demo/`: integration shell (`DemoApp`) that composes UI modules and demo state.
+- `src/ui/`: reusable UI building blocks (`DataGrid`, `Timeline`, `EventForm`, primitives, Radix wrappers).
+- `src/shared/`: framework-agnostic helpers and shared types (mock data, date helpers, domain types).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) without introducing Nx tooling overhead.
 
-## React Compiler
+## Data Flow
+- `DemoApp` holds one canonical `events` list in state.
+- `DataGrid` and `Timeline` are derived views of that same source.
+- Creating a new event from the dialog prepends to `events`, so both views update immediately.
+- Selection (`selectedEventId`) is app-level and shared by grid + timeline for sync behavior.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## DataGrid Behavior
+- Processing pipeline is always: `filter -> sort -> paginate`.
+- Global search applies across visible columns.
+- Sorting is stable (ties preserve original order).
+- Column visibility is controlled via DropdownMenu checkboxes.
+- Last visible column cannot be hidden (guard against 0-column table).
 
-## Expanding the ESLint configuration
+## Timeline Accessibility
+- Timeline items are keyboard focusable/selectable.
+- Arrow navigation supported: `Left/Right/Up/Down` moves focus to adjacent item.
+- Enter/Space selects the focused item.
+- `aria-live` polite announcements include group label, title, position, and time.
+  Example: `Feb 17, 2026 - Door Forced Open, 3 of 7, 08:30`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## EventForm Accessibility
+- Submit validation checks required title and valid date/time.
+- On invalid submit, focus moves to first invalid field in deterministic order:
+  title, then date/time.
+- Inline field errors are shown and connected with `aria-invalid`.
+- Successful submit updates a polite `role="status"` live region.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Trade-offs / Not Implemented
+- No data virtualization in `DataGrid` (acceptable for current demo scale).
+- No persisted user preferences (column visibility, filters, sorting).
+- No backend/API integration; data is in-memory demo state.
+- No comprehensive automated test suite yet; behavior validated manually.
