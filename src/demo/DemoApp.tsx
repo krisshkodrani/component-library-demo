@@ -56,7 +56,7 @@ export function DemoApp() {
       </header>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <article className="flex min-h-0 max-h-[60vh] flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:max-h-[70vh]">
           <header className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">DataGrid</h2>
             <p className="text-sm text-slate-600">Events: {gridEvents.length}</p>
@@ -81,26 +81,30 @@ export function DemoApp() {
               Simulate error
             </Button>
           </div>
-          <DataGrid
-            rows={gridEvents}
-            columns={gridColumns}
-            isLoading={simulateLoading}
-            error={simulateError ? 'Unable to load events. Please retry.' : null}
-            emptyMessage="No matching events."
-            getRowId={(event) => event.id}
-            selectedRowId={selectedEventId}
-            onRowClick={(event) => setSelectedEventId(event.id)}
-          />
+          <div className="min-h-0 flex-1 overflow-auto pr-1">
+            <DataGrid
+              rows={gridEvents}
+              columns={gridColumns}
+              isLoading={simulateLoading}
+              error={simulateError ? 'Unable to load events. Please retry.' : null}
+              emptyMessage="No matching events."
+              getRowId={(event) => event.id}
+              selectedRowId={selectedEventId}
+              onRowClick={(event) => setSelectedEventId(event.id)}
+            />
+          </div>
         </article>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <article className="flex min-h-0 max-h-[60vh] flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:max-h-[70vh]">
           <header className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Timeline</h2>
             <p className="text-sm text-slate-600">
               Events: {timelineEvents.length}
             </p>
           </header>
-          <Timeline events={timelineEvents} />
+          <div className="min-h-0 flex-1 overflow-auto pr-1">
+            <Timeline events={timelineEvents} />
+          </div>
         </article>
       </section>
     </main>
