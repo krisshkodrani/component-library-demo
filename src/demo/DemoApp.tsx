@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { makeMockEvents, type Event } from '../shared'
-import { DataGrid, Timeline, type ColumnDef } from '../ui'
+import { DataGrid, EventForm, Timeline, type ColumnDef } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 
@@ -121,6 +121,22 @@ export function DemoApp() {
             />
           </div>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <header className="mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">EventForm demo</h2>
+          <p className="text-sm text-slate-600">Controlled inputs with Save/Cancel actions.</p>
+        </header>
+        <EventForm
+          mode="add"
+          onSave={(draft) => {
+            console.log('EventForm save', draft)
+          }}
+          onCancel={() => {
+            console.log('EventForm cancel')
+          }}
+        />
       </section>
     </main>
   )

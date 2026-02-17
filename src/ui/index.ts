@@ -1,4 +1,6 @@
 export { DataGrid } from './DataGrid'
 export type { ColumnDef } from './DataGrid'
+export { EventForm } from './EventForm'
+export type { EventDraft } from './EventForm'
 export { Timeline } from './Timeline'
 export type { TimelineEvent } from './Timeline'
