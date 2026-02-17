@@ -1,9 +1,29 @@
+import { useState } from 'react'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 import { Field } from '../ui/primitives/Field'
 import { Input } from '../ui/primitives/Input'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/radix/Dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/radix/DropdownMenu'
 
 export function DemoApp() {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-8 px-6 py-12">
       <header className="space-y-2">
@@ -37,6 +57,49 @@ export function DemoApp() {
           </Field>
 
           <Badge variant="warning">Beta</Badge>
+
+          <div className="flex items-center gap-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="primary">Open Dialog</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>New Event</DialogTitle>
+                  <DialogDescription>
+                    Enter a quick name to create the event.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Field label="Event name" htmlFor="event-name">
+                  <Input id="event-name" placeholder="Door forced open" />
+                </Field>
+
+                <div className="mt-6 flex justify-end">
+                  <DialogClose asChild>
+                    <Button variant="secondary">Close</Button>
+                  </DialogClose>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost">Menu</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem>Open details</DropdownMenuItem>
+                <DropdownMenuCheckboxItem
+                  checked={showAdvanced}
+                  onCheckedChange={(checked) => setShowAdvanced(Boolean(checked))}
+                >
+                  Show advanced options
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Archive event</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </section>
     </main>
