@@ -31,7 +31,7 @@ type DropdownMenuItemProps = ComponentPropsWithoutRef<
 export function DropdownMenuItem({ className = '', ...props }: DropdownMenuItemProps) {
   return (
     <DropdownMenuPrimitive.Item
-      className={`relative flex cursor-default select-none items-center rounded px-2 py-1.5 text-sm text-slate-800 outline-none data-[highlighted]:bg-slate-100 ${className}`.trim()}
+      className={`relative flex cursor-default select-none items-center rounded px-2 py-1.5 text-sm text-slate-800 outline-none data-[highlighted]:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${className}`.trim()}
       {...props}
     />
   )
@@ -48,11 +48,11 @@ export function DropdownMenuCheckboxItem({
 }: DropdownMenuCheckboxItemProps) {
   return (
     <DropdownMenuPrimitive.CheckboxItem
-      className={`relative flex cursor-default select-none items-center rounded py-1.5 pl-8 pr-2 text-sm text-slate-800 outline-none data-[highlighted]:bg-slate-100 ${className}`.trim()}
+      className={`relative flex cursor-default select-none items-center rounded py-1.5 pl-8 pr-2 text-sm text-slate-800 outline-none data-[highlighted]:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${className}`.trim()}
       {...props}
     >
       <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-slate-700">
-        <DropdownMenuPrimitive.ItemIndicator>✓</DropdownMenuPrimitive.ItemIndicator>
+        <DropdownMenuPrimitive.ItemIndicator>x</DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>

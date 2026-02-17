@@ -2,6 +2,12 @@ import { useMemo, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../radix/DropdownMenu'
 import type { ColumnDef } from './types'
 
 type SortState = { columnId: string; direction: 'asc' | 'desc' } | null
@@ -47,6 +53,22 @@ function getFilterText<T>(column: ColumnDef<T>, row: T): string {
   return ''
 }
 
+function getInitialHiddenColumnIds<T>(columns: ColumnDef<T>[]): Set<string> {
+  const hidden = new Set<string>()
+
+  for (const column of columns) {
+    if (column.initialHidden) {
+      hidden.add(column.id)
+    }
+  }
+
+  if (hidden.size >= columns.length && columns.length > 0) {
+    hidden.delete(columns[0].id)
+  }
+
+  return hidden
+}
+
 export function DataGrid<T>({
   rows,
   columns,
@@ -68,6 +90,19 @@ export function DataGrid<T>({
   const [page, setPage] = useState(normalizedInitialPage)
   const [sortState, setSortState] = useState<SortState>(null)
   const [globalFilter, setGlobalFilter] = useState('')
+  const [hiddenColumnIds, setHiddenColumnIds] = useState<Set<string>>(() =>
+    getInitialHiddenColumnIds(columns),
+  )
+
+  const visibleColumns = useMemo(
+    () => columns.filter((column) => !hiddenColumnIds.has(column.id)),
+    [columns, hiddenColumnIds],
+  )
+
+  const hideableColumns = useMemo(
+    () => columns.filter((column) => column.hideable ?? true),
+    [columns],
+  )
 
   const normalizedFilter = globalFilter.trim().toLowerCase()
 
@@ -77,18 +112,20 @@ export function DataGrid<T>({
     }
 
     return rows.filter((row) =>
-      columns.some((column) =>
+      visibleColumns.some((column) =>
         getFilterText(column, row).toLowerCase().includes(normalizedFilter),
       ),
     )
-  }, [rows, columns, normalizedFilter])
+  }, [rows, visibleColumns, normalizedFilter])
 
   const sortedRows = useMemo(() => {
     if (!sortState) {
       return filteredRows
     }
 
-    const activeColumn = columns.find((column) => column.id === sortState.columnId)
+    const activeColumn = visibleColumns.find(
+      (column) => column.id === sortState.columnId,
+    )
     if (!activeColumn?.sortValue) {
       return filteredRows
     }
@@ -109,7 +146,7 @@ export function DataGrid<T>({
         return a.idx - b.idx
       })
       .map((entry) => entry.row)
-  }, [filteredRows, columns, sortState])
+  }, [filteredRows, visibleColumns, sortState])
 
   const totalFilteredRows = filteredRows.length
   const totalPages = Math.max(1, Math.ceil(totalFilteredRows / safePageSize))
@@ -141,30 +178,83 @@ export function DataGrid<T>({
     setPage(1)
   }
 
+  function handleColumnVisibilityChange(columnId: string, checked: boolean) {
+    setHiddenColumnIds((current) => {
+      const next = new Set(current)
+      const currentlyVisibleCount = columns.filter(
+        (column) => !current.has(column.id),
+      ).length
+
+      if (checked) {
+        next.delete(columnId)
+        return next
+      }
+
+      if (currentlyVisibleCount <= 1) {
+        return current
+      }
+
+      next.add(columnId)
+      return next
+    })
+    setPage(1)
+  }
+
   return (
     <div className="space-y-3">
-      <div className="space-y-2">
-        <Field label="Search" htmlFor="grid-search">
-          <Input
-            id="grid-search"
-            placeholder="Search rows..."
-            value={globalFilter}
-            onChange={(event) => {
-              setGlobalFilter(event.target.value)
-              setPage(1)
-            }}
-          />
-        </Field>
-        <p className="text-xs text-slate-600">
-          Showing {totalFilteredRows} of {totalRows}
-        </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full sm:max-w-sm">
+          <Field label="Search" htmlFor="grid-search">
+            <Input
+              id="grid-search"
+              placeholder="Search rows..."
+              value={globalFilter}
+              onChange={(event) => {
+                setGlobalFilter(event.target.value)
+                setPage(1)
+              }}
+            />
+          </Field>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" className="self-start sm:self-auto">
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {hideableColumns.map((column) => {
+              const isVisible = !hiddenColumnIds.has(column.id)
+              const disableHide =
+                isVisible && visibleColumns.length <= 1
+
+              return (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={isVisible}
+                  disabled={disableHide}
+                  onCheckedChange={(checked) =>
+                    handleColumnVisibilityChange(column.id, checked === true)
+                  }
+                >
+                  {column.header}
+                </DropdownMenuCheckboxItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      <p className="text-xs text-slate-600">
+        Showing {totalFilteredRows} of {totalRows}
+      </p>
 
       <div className="overflow-auto rounded-lg border border-slate-200">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-50">
             <tr>
-              {columns.map((column) => (
+              {visibleColumns.map((column) => (
                 <th
                   key={column.id}
                   scope="col"
@@ -206,7 +296,7 @@ export function DataGrid<T>({
           <tbody>
             {pageRows.map((row, rowIndex) => (
               <tr key={rowIndex} className="border-b border-slate-200 hover:bg-slate-50">
-                {columns.map((column) => (
+                {visibleColumns.map((column) => (
                   <td key={column.id} className="px-4 py-2 text-slate-700">
                     {column.accessor(row)}
                   </td>
