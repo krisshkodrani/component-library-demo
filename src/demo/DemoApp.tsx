@@ -20,11 +20,13 @@ export function DemoApp() {
       id: 'title',
       header: 'Title',
       accessor: (row) => row.title,
+      sortValue: (row) => row.title,
     },
     {
       id: 'date',
       header: 'Date',
       accessor: (row) => new Date(row.dateISO).toLocaleString(),
+      sortValue: (row) => new Date(row.dateISO).getTime(),
     },
     {
       id: 'severity',
