@@ -1,10 +1,7 @@
+import { DemoApp } from './demo/DemoApp'
+
 function App() {
-  return (
-    <main>
-      <h1>Genetec Take-Home Demo</h1>
-      <p>Scaffold ready.</p>
-    </main>
-  )
+  return <DemoApp />
 }
 
 export default App
