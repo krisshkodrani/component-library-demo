@@ -180,7 +180,7 @@ export function DataGrid<T>({
         </DropdownMenu>
       </div>
 
-      <p className="text-xs text-slate-600">
+      <p className="text-xs font-medium text-slate-600">
         Showing {totalFilteredRows} of {totalRows}
       </p>
 
@@ -201,15 +201,15 @@ export function DataGrid<T>({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full border-collapse text-left text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50">
+              <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                 <tr>
                   {visibleColumns.map((column) => (
                     <th
                       key={column.id}
                       scope="col"
-                      className="border-b border-slate-200 px-4 py-2 font-semibold text-slate-700"
+                      className="border-b border-slate-200 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-600"
                     >
                       {(() => {
                         const isSortable = column.sortable ?? Boolean(column.sortValue)
@@ -249,16 +249,16 @@ export function DataGrid<T>({
                   <tr
                     key={getRowId ? getRowId(row) : rowIndex}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    className={`border-b border-slate-200 ${
-                      onRowClick ? 'cursor-pointer hover:bg-slate-50' : ''
+                    className={`border-b border-slate-100 ${
+                      onRowClick ? 'cursor-pointer hover:bg-slate-50/80' : ''
                     } ${
                       getRowId && selectedRowId === getRowId(row)
-                        ? 'bg-blue-50'
+                        ? 'bg-blue-50/70'
                         : ''
                     }`.trim()}
                   >
                     {visibleColumns.map((column) => (
-                      <td key={column.id} className="px-4 py-2 text-slate-700">
+                      <td key={column.id} className="px-3 py-2.5 text-slate-700">
                         {column.accessor(row)}
                       </td>
                     ))}

@@ -63,8 +63,11 @@ export function Timeline({
         {announcement}
       </div>
       {groups.map((group) => (
-        <section key={group.dayKey} className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
+        <section
+          key={group.dayKey}
+          className="space-y-2 border-t border-slate-200 pt-3 first:border-t-0 first:pt-0"
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {group.label}
           </h3>
           <ul className="space-y-2">
@@ -84,7 +87,7 @@ export function Timeline({
                   onSelect ? 'cursor-pointer hover:bg-slate-100' : ''
                 } ${
                   event.id === selectedId
-                    ? 'border-blue-300 bg-blue-50'
+                    ? 'border-blue-200 bg-blue-50/70'
                     : 'border-slate-200 bg-slate-50'
                 } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2`.trim()}
                 tabIndex={onSelect ? 0 : -1}
@@ -108,7 +111,7 @@ export function Timeline({
                   }
                 }}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <p className="text-sm font-medium text-slate-900">{event.title}</p>
                   <time className="text-xs text-slate-600">
                     {new Date(event.dateISO).toLocaleTimeString([], {
