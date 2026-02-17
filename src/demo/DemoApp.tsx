@@ -3,6 +3,14 @@ import { makeMockEvents, type Event } from '../shared'
 import { DataGrid, EventForm, Timeline, type ColumnDef } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/radix/Dialog'
 
 const severityVariantMap: Record<
   NonNullable<Event['severity']>,
@@ -18,6 +26,7 @@ export function DemoApp() {
   const [simulateEmpty, setSimulateEmpty] = useState(false)
   const [simulateLoading, setSimulateLoading] = useState(false)
   const [simulateError, setSimulateError] = useState(false)
+  const [isNewEventOpen, setIsNewEventOpen] = useState(false)
 
   const gridEvents = simulateEmpty ? [] : makeMockEvents(200)
   const timelineEvents = makeMockEvents(60)
@@ -63,7 +72,30 @@ export function DemoApp() {
             </span>
           </div>
         </div>
-        <Button variant="primary">New Event</Button>
+        <Dialog open={isNewEventOpen} onOpenChange={setIsNewEventOpen}>
+          <DialogTrigger asChild>
+            <Button variant="primary">New Event</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New Event</DialogTitle>
+              <DialogDescription>
+                Create a new event using the form below.
+              </DialogDescription>
+            </DialogHeader>
+            <EventForm
+              mode="add"
+              autoFocusTitle
+              onSave={(draft) => {
+                console.log('New event save', draft)
+                setIsNewEventOpen(false)
+              }}
+              onCancel={() => {
+                setIsNewEventOpen(false)
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </header>
 
       <section className="grid gap-6 md:grid-cols-2">
@@ -121,22 +153,6 @@ export function DemoApp() {
             />
           </div>
         </article>
-      </section>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header className="mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">EventForm demo</h2>
-          <p className="text-sm text-slate-600">Controlled inputs with Save/Cancel actions.</p>
-        </header>
-        <EventForm
-          mode="add"
-          onSave={(draft) => {
-            console.log('EventForm save', draft)
-          }}
-          onCancel={() => {
-            console.log('EventForm cancel')
-          }}
-        />
       </section>
     </main>
   )

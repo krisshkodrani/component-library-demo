@@ -19,6 +19,7 @@ type EventFormProps = {
   initialValue?: EventDraft
   onSave: (draft: EventDraft) => void
   onCancel: () => void
+  autoFocusTitle?: boolean
 }
 
 type EventFormErrors = {
@@ -31,6 +32,7 @@ export function EventForm({
   initialValue,
   onSave,
   onCancel,
+  autoFocusTitle = false,
 }: EventFormProps) {
   const initialDateISO = initialValue?.dateISO ?? new Date().toISOString()
   const [draft, setDraft] = useState<EventDraft>({
@@ -106,6 +108,7 @@ export function EventForm({
         <Input
           ref={titleRef}
           id="event-form-title"
+          autoFocus={autoFocusTitle}
           value={draft.title}
           aria-invalid={Boolean(errors.title)}
           onChange={(event) => {
