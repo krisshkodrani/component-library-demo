@@ -113,8 +113,8 @@ export function DemoApp() {
         </Dialog>
       </header>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        <article className="flex min-h-0 max-h-[60vh] flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:max-h-[70vh]">
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <article className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:max-h-[70vh]">
           <header className="mb-4 border-b border-slate-100 pb-3">
             <h2 className="text-lg font-semibold text-slate-900">DataGrid</h2>
             <p className="text-sm text-slate-600">Events: {gridEvents.length}</p>
@@ -153,7 +153,7 @@ export function DemoApp() {
           </div>
         </article>
 
-        <article className="flex min-h-0 max-h-[60vh] flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:max-h-[70vh]">
+        <article className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:max-h-[70vh]">
           <header className="mb-4 border-b border-slate-100 pb-3">
             <h2 className="text-lg font-semibold text-slate-900">Timeline</h2>
             <p className="text-sm text-slate-600">

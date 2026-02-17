@@ -204,7 +204,7 @@ export function DataGrid<T>({
           </div>
         ) : (
           <div className="h-full overflow-auto rounded-lg border border-slate-200 bg-white">
-            <table className="w-full border-collapse text-left text-sm">
+            <table className="min-w-[640px] w-full border-collapse text-left text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                 <tr>
                   {visibleColumns.map((column) => (
