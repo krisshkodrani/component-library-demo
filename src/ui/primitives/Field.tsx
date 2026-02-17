@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react'
 
 type FieldProps = {
   label: string
@@ -8,14 +8,24 @@ type FieldProps = {
 }
 
 export function Field({ label, htmlFor, error, children }: FieldProps) {
+  const errorId = htmlFor && error ? `${htmlFor}-error` : undefined
+
+  const child = Children.only(children)
+  const enhanced =
+    errorId && isValidElement(child)
+      ? cloneElement(child as ReactElement<Record<string, unknown>>, {
+          'aria-describedby': errorId,
+        })
+      : child
+
   return (
     <div className="space-y-1.5">
       <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-800">
         {label}
       </label>
-      {children}
+      {enhanced}
       {error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p id={errorId} className="text-sm text-red-600" role="alert">
           {error}
         </p>
       ) : null}

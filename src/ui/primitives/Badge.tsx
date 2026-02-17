@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { HTMLAttributes } from 'react'
 
 type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger'
@@ -15,12 +16,16 @@ const variantClasses: Record<BadgeVariant, string> = {
 
 export function Badge({
   variant = 'neutral',
-  className = '',
+  className,
   ...props
 }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${variantClasses[variant]} ${className}`.trim()}
+      className={clsx(
+        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
+        variantClasses[variant],
+        className,
+      )}
       {...props}
     />
   )

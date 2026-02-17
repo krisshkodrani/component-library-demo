@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { makeMockEvents, type Event } from '../shared'
-import { DataGrid, EventForm, Timeline, type ColumnDef } from '../ui'
+import { useMemo, useState } from 'react'
+import { makeMockEvents, severityToVariant, type Event } from '../shared'
+import { DataGrid, EventForm, Timeline, type ColumnDef, type EventDraft } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 import {
@@ -12,14 +12,7 @@ import {
   DialogTrigger,
 } from '../ui/radix/Dialog'
 
-const severityVariantMap: Record<
-  NonNullable<Event['severity']>,
-  'neutral' | 'success' | 'warning' | 'danger'
-> = {
-  low: 'success',
-  medium: 'warning',
-  high: 'danger',
-}
+const TIMELINE_EVENT_LIMIT = 60
 
 export function DemoApp() {
   const [events, setEvents] = useState<Event[]>(() => makeMockEvents(200))
@@ -28,33 +21,76 @@ export function DemoApp() {
   const [simulateLoading, setSimulateLoading] = useState(false)
   const [simulateError, setSimulateError] = useState(false)
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
 
   const gridEvents = simulateEmpty ? [] : events
-  const timelineEvents = events.slice(0, 60)
-  const gridColumns: ColumnDef<Event>[] = [
-    {
-      id: 'title',
-      header: 'Title',
-      accessor: (row) => row.title,
-      sortValue: (row) => row.title,
-    },
-    {
-      id: 'date',
-      header: 'Date',
-      accessor: (row) => new Date(row.dateISO).toLocaleString(),
-      sortValue: (row) => new Date(row.dateISO).getTime(),
-    },
-    {
-      id: 'severity',
-      header: 'Severity',
-      accessor: (row) =>
-        row.severity ? (
-          <Badge variant={severityVariantMap[row.severity]}>{row.severity}</Badge>
-        ) : (
-          '-'
-        ),
-    },
-  ]
+  const timelineEvents = useMemo(
+    () => events.slice(0, TIMELINE_EVENT_LIMIT),
+    [events],
+  )
+
+  const gridColumns: ColumnDef<Event>[] = useMemo(
+    () => [
+      {
+        id: 'title',
+        header: 'Title',
+        accessor: (row) => row.title,
+        sortValue: (row) => row.title,
+        filterable: true,
+      },
+      {
+        id: 'date',
+        header: 'Date',
+        accessor: (row) => new Date(row.dateISO).toLocaleString(),
+        sortValue: (row) => new Date(row.dateISO).getTime(),
+      },
+      {
+        id: 'severity',
+        header: 'Severity',
+        accessor: (row) =>
+          row.severity ? (
+            <Badge variant={severityToVariant[row.severity]}>{row.severity}</Badge>
+          ) : (
+            '-'
+          ),
+        filterValue: (row) => row.severity ?? '',
+        filterable: true,
+      },
+    ],
+    [],
+  )
+
+  const selectedEvent = selectedEventId
+    ? events.find((e) => e.id === selectedEventId) ?? null
+    : null
+
+  function handleNewEventSave(draft: EventDraft) {
+    const nextId =
+      globalThis.crypto?.randomUUID?.() ??
+      `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const newEvent: Event = {
+      id: nextId,
+      title: draft.title,
+      dateISO: draft.dateISO,
+      description: draft.description,
+      severity: draft.severity,
+    }
+    setEvents((prev) => [newEvent, ...prev])
+    setSelectedEventId(nextId)
+    setIsNewEventOpen(false)
+  }
+
+  function handleEditSave(draft: EventDraft) {
+    if (!editingEvent) return
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === editingEvent.id
+          ? { ...e, title: draft.title, dateISO: draft.dateISO, description: draft.description, severity: draft.severity }
+          : e,
+      ),
+    )
+    setEditingEvent(null)
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
@@ -75,40 +111,56 @@ export function DemoApp() {
             </span>
           </div>
         </div>
-        <Dialog open={isNewEventOpen} onOpenChange={setIsNewEventOpen}>
-          <DialogTrigger asChild>
-            <Button variant="primary">New Event</Button>
-          </DialogTrigger>
+
+        <div className="flex items-center gap-2">
+          {selectedEvent && (
+            <Button variant="secondary" onClick={() => setEditingEvent(selectedEvent)}>
+              Edit Event
+            </Button>
+          )}
+          <Dialog open={isNewEventOpen} onOpenChange={setIsNewEventOpen}>
+            <DialogTrigger asChild>
+              <Button variant="primary">New Event</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>New Event</DialogTitle>
+                <DialogDescription>
+                  Create a new event using the form below.
+                </DialogDescription>
+              </DialogHeader>
+              <EventForm
+                mode="add"
+                autoFocusTitle
+                onSave={handleNewEventSave}
+                onCancel={() => setIsNewEventOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Dialog open={editingEvent !== null} onOpenChange={(open) => { if (!open) setEditingEvent(null) }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>New Event</DialogTitle>
+              <DialogTitle>Edit Event</DialogTitle>
               <DialogDescription>
-                Create a new event using the form below.
+                Update the event details below.
               </DialogDescription>
             </DialogHeader>
-            <EventForm
-              mode="add"
-              autoFocusTitle
-              onSave={(draft) => {
-                const nextId =
-                  globalThis.crypto?.randomUUID?.() ??
-                  `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-                const newEvent: Event = {
-                  id: nextId,
-                  title: draft.title,
-                  dateISO: draft.dateISO,
-                  description: draft.description,
-                  severity: draft.severity,
-                }
-                setEvents((prev) => [newEvent, ...prev])
-                setSelectedEventId(nextId)
-                console.log('New event save', newEvent)
-                setIsNewEventOpen(false)
-              }}
-              onCancel={() => {
-                setIsNewEventOpen(false)
-              }}
-            />
+            {editingEvent && (
+              <EventForm
+                mode="edit"
+                autoFocusTitle
+                initialValue={{
+                  title: editingEvent.title,
+                  dateISO: editingEvent.dateISO,
+                  description: editingEvent.description,
+                  severity: editingEvent.severity,
+                }}
+                onSave={handleEditSave}
+                onCancel={() => setEditingEvent(null)}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </header>

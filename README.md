@@ -18,17 +18,21 @@ This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) wit
 - `DataGrid` and `Timeline` are derived views of that same source.
 - Creating a new event from the dialog prepends to `events`, so both views update immediately.
 - Selection (`selectedEventId`) is app-level and shared by grid + timeline for sync behavior.
+- Editing an event updates it in-place; both views reflect changes immediately.
 
 ## DataGrid Behavior
-- Processing pipeline is always: `filter -> sort -> paginate`.
+- Processing pipeline is always: `global filter -> column filters -> sort -> paginate`.
 - Global search applies across visible columns.
+- Per-column filters allow filtering individual columns independently.
 - Sorting is stable (ties preserve original order).
 - Column visibility is controlled via DropdownMenu checkboxes.
 - Last visible column cannot be hidden (guard against 0-column table).
 
 ## Timeline Accessibility
 - Timeline items are keyboard focusable/selectable.
-- Arrow navigation supported: `Left/Right/Up/Down` moves focus to adjacent item.
+- Arrow navigation:
+  - `Up / Down` moves focus within the current day group.
+  - `Left / Right` jumps to the adjacent day group (same relative position, clamped).
 - Enter/Space selects the focused item.
 - `aria-live` polite announcements include group label, title, position, and time.
   Example: `Feb 17, 2026 - Door Forced Open, 3 of 7, 08:30`.
@@ -37,7 +41,7 @@ This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) wit
 - Submit validation checks required title and valid date/time.
 - On invalid submit, focus moves to first invalid field in deterministic order:
   title, then date/time.
-- Inline field errors are shown and connected with `aria-invalid`.
+- Inline field errors are shown with `aria-invalid` and connected via `aria-describedby`.
 - Successful submit updates a polite `role="status"` live region.
 
 ## Trade-offs / Not Implemented

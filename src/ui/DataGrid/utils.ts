@@ -2,6 +2,8 @@ import type { ColumnDef } from './types'
 
 export type SortState = { columnId: string; direction: 'asc' | 'desc' } | null
 
+export type ColumnFilterState = Record<string, string>
+
 type SortableValue = string | number | boolean | null | undefined
 
 function compareValues(a: SortableValue, b: SortableValue): number {
@@ -56,6 +58,30 @@ export function applyGlobalFilter<T>(
   return rows.filter((row) =>
     columns.some((column) =>
       getFilterText(column, row).toLowerCase().includes(normalizedQuery),
+    ),
+  )
+}
+
+export function applyColumnFilters<T>(
+  rows: T[],
+  columns: ColumnDef<T>[],
+  filters: ColumnFilterState,
+): T[] {
+  const activeFilters = Object.entries(filters)
+    .filter(([, value]) => value.trim() !== '')
+    .map(([columnId, value]) => ({
+      column: columns.find((c) => c.id === columnId),
+      query: value.trim().toLowerCase(),
+    }))
+    .filter((f): f is { column: ColumnDef<T>; query: string } => f.column != null)
+
+  if (activeFilters.length === 0) {
+    return rows
+  }
+
+  return rows.filter((row) =>
+    activeFilters.every(({ column, query }) =>
+      getFilterText(column, row).toLowerCase().includes(query),
     ),
   )
 }

@@ -11,12 +11,6 @@ export type TimelinePosition = {
   itemIndex: number
 }
 
-function flattenPositions(groups: TimelineGroup[]): TimelinePosition[] {
-  return groups.flatMap((group, groupIndex) =>
-    group.items.map((_, itemIndex) => ({ groupIndex, itemIndex })),
-  )
-}
-
 export function findActivePosition(
   groups: TimelineGroup[],
   activeId: string | null,
@@ -37,6 +31,11 @@ export function findActivePosition(
   return null
 }
 
+/**
+ * Arrow key semantics:
+ *   Up / Down   - move within the current group (clamped at boundaries)
+ *   Left / Right - jump to the previous / next group (same item index, clamped)
+ */
 export function getNextPosition(
   groups: TimelineGroup[],
   currentPos: TimelinePosition | null,
@@ -46,32 +45,47 @@ export function getNextPosition(
     return null
   }
 
-  const offset =
-    key === 'ArrowDown' || key === 'ArrowRight'
-      ? 1
-      : key === 'ArrowUp' || key === 'ArrowLeft'
-        ? -1
-        : 0
-
-  if (offset === 0) {
+  const { groupIndex, itemIndex } = currentPos
+  const currentGroup = groups[groupIndex]
+  if (!currentGroup) {
     return null
   }
 
-  const positions = flattenPositions(groups)
-  const currentIndex = positions.findIndex(
-    (pos) =>
-      pos.groupIndex === currentPos.groupIndex && pos.itemIndex === currentPos.itemIndex,
-  )
-  if (currentIndex === -1) {
-    return null
+  if (key === 'ArrowDown') {
+    const nextItem = itemIndex + 1
+    if (nextItem >= currentGroup.items.length) {
+      return null
+    }
+    return { groupIndex, itemIndex: nextItem }
   }
 
-  const targetIndex = Math.min(
-    positions.length - 1,
-    Math.max(0, currentIndex + offset),
-  )
+  if (key === 'ArrowUp') {
+    const prevItem = itemIndex - 1
+    if (prevItem < 0) {
+      return null
+    }
+    return { groupIndex, itemIndex: prevItem }
+  }
 
-  return positions[targetIndex] ?? null
+  if (key === 'ArrowRight') {
+    const nextGroup = groupIndex + 1
+    if (nextGroup >= groups.length) {
+      return null
+    }
+    const clampedItem = Math.min(itemIndex, groups[nextGroup].items.length - 1)
+    return { groupIndex: nextGroup, itemIndex: clampedItem }
+  }
+
+  if (key === 'ArrowLeft') {
+    const prevGroup = groupIndex - 1
+    if (prevGroup < 0) {
+      return null
+    }
+    const clampedItem = Math.min(itemIndex, groups[prevGroup].items.length - 1)
+    return { groupIndex: prevGroup, itemIndex: clampedItem }
+  }
+
+  return null
 }
 
 export function getAnnouncement(
@@ -95,3 +109,4 @@ export function getAnnouncement(
 
   return `${group.label} - ${item.title}, ${pos.itemIndex + 1} of ${group.items.length}, ${timeLabel}`
 }
+

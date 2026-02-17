@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
-import type { EventDraft } from './types'
+import { SEVERITY_OPTIONS, type EventDraft } from './types'
 
 function toLocalDateTimeInputValue(dateISO: string): string {
   const date = new Date(dateISO)
@@ -156,12 +156,11 @@ export function EventForm({
           id="event-form-severity"
           value={draft.severity ?? ''}
           onChange={(event) => {
+            const value = event.target.value
+            const match = SEVERITY_OPTIONS.find((opt) => opt.value === value)
             setDraft((current) => ({
               ...current,
-              severity:
-                event.target.value === ''
-                  ? undefined
-                  : (event.target.value as EventDraft['severity']),
+              severity: match && match.value !== '' ? match.value : undefined,
             }))
             if (successMessage) {
               setSuccessMessage(null)
@@ -169,10 +168,11 @@ export function EventForm({
           }}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
-          <option value="">None</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
+          {SEVERITY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
       </Field>
 

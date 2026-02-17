@@ -1,17 +1,10 @@
-import { useRef, useState } from 'react'
+import clsx from 'clsx'
+import { useMemo, useRef, useState } from 'react'
+import { severityToVariant } from '../../shared'
 import { Badge } from '../primitives/Badge'
 import { groupEventsByDay } from './grouping'
 import { findActivePosition, getAnnouncement, getNextPosition } from './navigation'
 import type { TimelineEvent } from './types'
-
-const severityVariantMap: Record<
-  NonNullable<TimelineEvent['severity']>,
-  'neutral' | 'success' | 'warning' | 'danger'
-> = {
-  low: 'success',
-  medium: 'warning',
-  high: 'danger',
-}
 
 export function Timeline({
   events,
@@ -22,7 +15,7 @@ export function Timeline({
   selectedId?: string | null
   onSelect?: (id: string) => void
 }) {
-  const groups = groupEventsByDay(events)
+  const groups = useMemo(() => groupEventsByDay(events), [events])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({})
@@ -83,13 +76,13 @@ export function Timeline({
                   onSelect?.(event.id)
                 }}
                 onFocus={() => announceForId(event.id)}
-                className={`rounded-lg border px-3 py-2 ${
-                  onSelect ? 'cursor-pointer hover:bg-slate-100' : ''
-                } ${
+                className={clsx(
+                  'rounded-lg border px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
+                  onSelect && 'cursor-pointer hover:bg-slate-100',
                   event.id === selectedId
                     ? 'border-blue-200 bg-blue-50/70'
-                    : 'border-slate-200 bg-slate-50'
-                } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2`.trim()}
+                    : 'border-slate-200 bg-slate-50',
+                )}
                 tabIndex={onSelect ? 0 : -1}
                 onKeyDown={(eventKey) => {
                   if (eventKey.key === 'Enter' || eventKey.key === ' ') {
@@ -99,13 +92,12 @@ export function Timeline({
                     return
                   }
 
-                  if (eventKey.key === 'ArrowDown' || eventKey.key === 'ArrowRight') {
-                    eventKey.preventDefault()
-                    focusByKey(event.id, eventKey.key)
-                    return
-                  }
-
-                  if (eventKey.key === 'ArrowUp' || eventKey.key === 'ArrowLeft') {
+                  if (
+                    eventKey.key === 'ArrowDown' ||
+                    eventKey.key === 'ArrowRight' ||
+                    eventKey.key === 'ArrowUp' ||
+                    eventKey.key === 'ArrowLeft'
+                  ) {
                     eventKey.preventDefault()
                     focusByKey(event.id, eventKey.key)
                   }
@@ -122,7 +114,7 @@ export function Timeline({
                 </div>
                 {event.severity ? (
                   <div className="mt-2">
-                    <Badge variant={severityVariantMap[event.severity]}>
+                    <Badge variant={severityToVariant[event.severity]}>
                       {event.severity}
                     </Badge>
                   </div>

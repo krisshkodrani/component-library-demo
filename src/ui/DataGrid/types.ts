@@ -7,6 +7,7 @@ export type ColumnDef<T> = {
   sortValue?: (row: T) => string | number | boolean | null
   filterValue?: (row: T) => string
   sortable?: boolean
+  filterable?: boolean
   hideable?: boolean
   initialHidden?: boolean
 }
