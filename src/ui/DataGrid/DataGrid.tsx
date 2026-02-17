@@ -77,6 +77,9 @@ export function DataGrid<T>({
   isLoading = false,
   error = null,
   emptyMessage = 'No results.',
+  getRowId,
+  selectedRowId = null,
+  onRowClick,
 }: {
   rows: T[]
   columns: ColumnDef<T>[]
@@ -85,6 +88,9 @@ export function DataGrid<T>({
   isLoading?: boolean
   error?: string | null
   emptyMessage?: string
+  getRowId?: (row: T) => string
+  selectedRowId?: string | null
+  onRowClick?: (row: T) => void
 }) {
   const safePageSize = Math.max(1, Math.floor(pageSize))
   const totalRows = rows.length
@@ -317,7 +323,17 @@ export function DataGrid<T>({
               </thead>
               <tbody>
                 {pageRows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-slate-200 hover:bg-slate-50">
+                  <tr
+                    key={getRowId ? getRowId(row) : rowIndex}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    className={`border-b border-slate-200 ${
+                      onRowClick ? 'cursor-pointer hover:bg-slate-50' : ''
+                    } ${
+                      getRowId && selectedRowId === getRowId(row)
+                        ? 'bg-blue-50'
+                        : ''
+                    }`.trim()}
+                  >
                     {visibleColumns.map((column) => (
                       <td key={column.id} className="px-4 py-2 text-slate-700">
                         {column.accessor(row)}

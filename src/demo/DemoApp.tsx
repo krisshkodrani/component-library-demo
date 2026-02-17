@@ -14,6 +14,7 @@ const severityVariantMap: Record<
 }
 
 export function DemoApp() {
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [simulateEmpty, setSimulateEmpty] = useState(false)
   const [simulateLoading, setSimulateLoading] = useState(false)
   const [simulateError, setSimulateError] = useState(false)
@@ -86,6 +87,9 @@ export function DemoApp() {
             isLoading={simulateLoading}
             error={simulateError ? 'Unable to load events. Please retry.' : null}
             emptyMessage="No matching events."
+            getRowId={(event) => event.id}
+            selectedRowId={selectedEventId}
+            onRowClick={(event) => setSelectedEventId(event.id)}
           />
         </article>
 
