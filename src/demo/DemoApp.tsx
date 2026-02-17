@@ -1,9 +1,42 @@
-import { makeMockEvents } from '../shared'
+import { makeMockEvents, type Event } from '../shared'
+import { DataGrid, type ColumnDef } from '../ui'
+import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
+
+const severityVariantMap: Record<
+  NonNullable<Event['severity']>,
+  'neutral' | 'success' | 'warning' | 'danger'
+> = {
+  low: 'success',
+  medium: 'warning',
+  high: 'danger',
+}
 
 export function DemoApp() {
   const gridEvents = makeMockEvents(200)
   const timelineEvents = makeMockEvents(60)
+  const gridColumns: ColumnDef<Event>[] = [
+    {
+      id: 'title',
+      header: 'Title',
+      accessor: (row) => row.title,
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      accessor: (row) => new Date(row.dateISO).toLocaleString(),
+    },
+    {
+      id: 'severity',
+      header: 'Severity',
+      accessor: (row) =>
+        row.severity ? (
+          <Badge variant={severityVariantMap[row.severity]}>{row.severity}</Badge>
+        ) : (
+          '-'
+        ),
+    },
+  ]
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
@@ -20,9 +53,7 @@ export function DemoApp() {
             <h2 className="text-lg font-semibold text-slate-900">DataGrid</h2>
             <p className="text-sm text-slate-600">Events: {gridEvents.length}</p>
           </header>
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-            Component coming next.
-          </div>
+          <DataGrid rows={gridEvents} columns={gridColumns} />
         </article>
 
         <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
