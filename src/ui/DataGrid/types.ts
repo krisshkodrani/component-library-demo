@@ -5,5 +5,6 @@ export type ColumnDef<T> = {
   header: string
   accessor: (row: T) => ReactNode
   sortValue?: (row: T) => string | number | boolean | null
+  filterValue?: (row: T) => string
   sortable?: boolean
 }

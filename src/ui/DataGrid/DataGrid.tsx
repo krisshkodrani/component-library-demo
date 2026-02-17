@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button } from '../primitives/Button'
+import { Field } from '../primitives/Field'
+import { Input } from '../primitives/Input'
 import type { ColumnDef } from './types'
 
 type SortState = { columnId: string; direction: 'asc' | 'desc' } | null
@@ -26,6 +28,25 @@ function compareValues(a: SortableValue, b: SortableValue): number {
   return String(a).localeCompare(String(b))
 }
 
+function getFilterText<T>(column: ColumnDef<T>, row: T): string {
+  if (column.filterValue) {
+    return column.filterValue(row)
+  }
+
+  if (column.sortValue) {
+    const value = column.sortValue(row)
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return String(value)
+    }
+  }
+
+  return ''
+}
+
 export function DataGrid<T>({
   rows,
   columns,
@@ -39,27 +60,42 @@ export function DataGrid<T>({
 }) {
   const safePageSize = Math.max(1, Math.floor(pageSize))
   const totalRows = rows.length
-  const totalPages = Math.max(1, Math.ceil(totalRows / safePageSize))
+  const initialTotalPages = Math.max(1, Math.ceil(totalRows / safePageSize))
   const normalizedInitialPage = Math.min(
-    totalPages,
+    initialTotalPages,
     Math.max(1, Math.floor(initialPage)),
   )
   const [page, setPage] = useState(normalizedInitialPage)
   const [sortState, setSortState] = useState<SortState>(null)
+  const [globalFilter, setGlobalFilter] = useState('')
+
+  const normalizedFilter = globalFilter.trim().toLowerCase()
+
+  const filteredRows = useMemo(() => {
+    if (!normalizedFilter) {
+      return rows
+    }
+
+    return rows.filter((row) =>
+      columns.some((column) =>
+        getFilterText(column, row).toLowerCase().includes(normalizedFilter),
+      ),
+    )
+  }, [rows, columns, normalizedFilter])
 
   const sortedRows = useMemo(() => {
     if (!sortState) {
-      return rows
+      return filteredRows
     }
 
     const activeColumn = columns.find((column) => column.id === sortState.columnId)
     if (!activeColumn?.sortValue) {
-      return rows
+      return filteredRows
     }
 
     const directionFactor = sortState.direction === 'asc' ? 1 : -1
 
-    return rows
+    return filteredRows
       .map((row, idx) => ({ row, idx }))
       .sort((a, b) => {
         const aValue = activeColumn.sortValue?.(a.row)
@@ -73,9 +109,12 @@ export function DataGrid<T>({
         return a.idx - b.idx
       })
       .map((entry) => entry.row)
-  }, [rows, columns, sortState])
+  }, [filteredRows, columns, sortState])
 
+  const totalFilteredRows = filteredRows.length
+  const totalPages = Math.max(1, Math.ceil(totalFilteredRows / safePageSize))
   const safePage = Math.min(page, totalPages)
+
   const pageRows = useMemo(() => {
     const start = (safePage - 1) * safePageSize
     const end = safePage * safePageSize
@@ -104,6 +143,23 @@ export function DataGrid<T>({
 
   return (
     <div className="space-y-3">
+      <div className="space-y-2">
+        <Field label="Search" htmlFor="grid-search">
+          <Input
+            id="grid-search"
+            placeholder="Search rows..."
+            value={globalFilter}
+            onChange={(event) => {
+              setGlobalFilter(event.target.value)
+              setPage(1)
+            }}
+          />
+        </Field>
+        <p className="text-xs text-slate-600">
+          Showing {totalFilteredRows} of {totalRows}
+        </p>
+      </div>
+
       <div className="overflow-auto rounded-lg border border-slate-200">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="bg-slate-50">
@@ -119,8 +175,8 @@ export function DataGrid<T>({
                     const isActive = sortState?.columnId === column.id
                     const indicator = isActive
                       ? sortState?.direction === 'asc'
-                        ? '▲'
-                        : '▼'
+                        ? '^'
+                        : 'v'
                       : ''
 
                     if (!isSortable) {
