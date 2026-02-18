@@ -1,6 +1,6 @@
 export { ErrorBoundary } from './primitives/ErrorBoundary'
-export { DataGrid } from './DataGrid'
-export type { ColumnDef } from './DataGrid'
+export { DataGrid, applyColumnFilters } from './DataGrid'
+export type { ColumnDef, ColumnFilterState } from './DataGrid'
 export { EventForm } from './EventForm'
 export type { EventDraft } from './EventForm'
 export { Timeline } from './Timeline'

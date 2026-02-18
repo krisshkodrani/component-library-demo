@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useId, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
@@ -147,6 +147,38 @@ export function DataGrid<T>({
     [sortedRows, safePage, safePageSize],
   )
 
+  // Scroll-to-selection: navigate to the correct page, then scroll the row into view.
+
+  // 1. Page adjustment for selected row during render transition.
+  const [prevSelectedRowId, setPrevSelectedRowId] = useState(selectedRowId)
+
+  if (selectedRowId !== prevSelectedRowId) {
+    setPrevSelectedRowId(selectedRowId)
+    if (selectedRowId && getRowId) {
+      const rowIndex = sortedRows.findIndex((row) => getRowId(row) === selectedRowId)
+      if (rowIndex >= 0) {
+        setPage(Math.floor(rowIndex / safePageSize) + 1)
+      }
+    }
+  }
+
+  // 2. Stable ref callback stores the selected row element during commit phase.
+  const selectedRowElement = useRef<HTMLTableRowElement | null>(null)
+  const selectedRowRef = useCallback((el: HTMLTableRowElement | null) => {
+    selectedRowElement.current = el
+  }, [])
+
+  // 3. Scroll after render; effects can safely read refs and touch the DOM.
+  const lastScrolledId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedRowId || selectedRowId === lastScrolledId.current) return
+    const el = selectedRowElement.current
+    if (!el) return
+    lastScrolledId.current = selectedRowId
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [selectedRowId, safePage])
+
   function handleSortToggle(column: ColumnDef<T>) {
     setSortState((current) => {
       if (!current || current.columnId !== column.id) {
@@ -210,6 +242,12 @@ export function DataGrid<T>({
     })
   }
 
+  const resizeAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => resizeAbortRef.current?.abort()
+  }, [])
+
   function handleResizeStart(
     event: React.PointerEvent<HTMLSpanElement>,
     columnId: string,
@@ -217,23 +255,23 @@ export function DataGrid<T>({
     event.preventDefault()
     event.stopPropagation()
 
+    resizeAbortRef.current?.abort()
+    const controller = new AbortController()
+    resizeAbortRef.current = controller
+
     const header = event.currentTarget.closest('th')
     const startWidth = header instanceof HTMLElement ? header.offsetWidth : 180
     const startX = event.clientX
 
-    function onMove(moveEvent: PointerEvent) {
+    globalThis.addEventListener('pointermove', (moveEvent) => {
       const delta = moveEvent.clientX - startX
       const nextWidth = Math.max(120, Math.min(640, startWidth + delta))
       setColumnWidths((current) => ({ ...current, [columnId]: nextWidth }))
-    }
+    }, { signal: controller.signal })
 
-    function onUp() {
-      globalThis.removeEventListener('pointermove', onMove)
-      globalThis.removeEventListener('pointerup', onUp)
-    }
-
-    globalThis.addEventListener('pointermove', onMove)
-    globalThis.addEventListener('pointerup', onUp)
+    globalThis.addEventListener('pointerup', () => {
+      controller.abort()
+    }, { signal: controller.signal })
   }
 
   const hasColumnFilters = filterableColumns.length > 0
@@ -380,6 +418,7 @@ export function DataGrid<T>({
                   return (
                     <tr
                       key={rowId ?? rowIndex}
+                      ref={rowId === selectedRowId ? selectedRowRef : undefined}
                       tabIndex={onRowClick ? 0 : undefined}
                       aria-selected={
                         onRowClick && rowId ? selectedRowId === rowId : undefined
@@ -394,7 +433,7 @@ export function DataGrid<T>({
                       className={clsx(
                         'border-b border-slate-100',
                         onRowClick && 'cursor-pointer hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600',
-                        rowId && selectedRowId === rowId && 'bg-blue-50/70',
+                        rowId && selectedRowId === rowId && 'bg-blue-100',
                       )}
                     >
                       {visibleColumns.map((column) => (

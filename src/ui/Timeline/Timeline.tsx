@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { severityToVariant } from '../../shared'
 import { Badge } from '../primitives/Badge'
 import { groupEventsByDay } from './grouping'
@@ -26,6 +26,13 @@ export function Timeline({
   const [activeId, setActiveId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  useEffect(() => {
+    if (!selectedId) return
+    const el = itemRefs.current[selectedId]
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [selectedId])
 
   function announceForId(id: string) {
     if (activeId === id) {
@@ -95,7 +102,7 @@ export function Timeline({
                     'w-full rounded-lg border px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600',
                     onSelect && 'cursor-pointer hover:bg-slate-100',
                     event.id === selectedId
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-blue-500 bg-blue-100'
                       : 'border-slate-200 bg-slate-50',
                   )}
                   aria-pressed={onSelect ? event.id === selectedId : undefined}

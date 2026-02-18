@@ -1,8 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { severityToVariant, type Event } from '../shared'
 import { useEventViewStore } from '../state/useEventViewStore'
-import { DataGrid, ErrorBoundary, EventForm, Timeline, type ColumnDef, type EventDraft } from '../ui'
-import { applyColumnFilters } from '../ui/DataGrid/utils'
+import { DataGrid, ErrorBoundary, EventForm, Timeline, applyColumnFilters, type ColumnDef, type EventDraft } from '../ui'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
 import {

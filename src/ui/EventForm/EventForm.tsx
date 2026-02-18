@@ -1,7 +1,8 @@
+import clsx from 'clsx'
 import { useId, useRef, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
-import { Input } from '../primitives/Input'
+import { Input, inputStyles } from '../primitives/Input'
 import { SEVERITY_OPTIONS, type EventDraft } from './types'
 
 function toLocalDateTimeInputValue(dateISO: string): string {
@@ -151,7 +152,7 @@ export function EventForm({
               severity: match && match.value !== '' ? match.value : undefined,
             }))
           }}
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          className={inputStyles}
         >
           {SEVERITY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -172,7 +173,7 @@ export function EventForm({
             }))
           }}
           rows={3}
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+          className={clsx(inputStyles, 'resize-none')}
           placeholder="Optional details"
         />
       </Field>

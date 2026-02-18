@@ -1,4 +1,4 @@
-# Genetec React Technical Task
+# Event Management Demo
 
 ## Setup & Run
 - Install dependencies: `npm install`
@@ -7,9 +7,10 @@
 - Preview production build: `npm run preview`
 
 ## Project Structure
-- `src/demo/`: integration shell (`DemoApp`) that composes UI modules and demo state.
+- `src/demo/`: integration shell (`DemoApp`) that composes UI modules and app state.
 - `src/ui/`: reusable UI building blocks (`DataGrid`, `Timeline`, `EventForm`, primitives, Radix wrappers).
 - `src/shared/`: framework-agnostic helpers and shared types (mock data, date helpers, domain types).
+- `src/state/`: app-level Zustand store.
 
 This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) without introducing Nx tooling overhead.
 
@@ -17,25 +18,25 @@ This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) wit
 
 The app uses **Zustand** for global state (`src/state/useEventViewStore.ts`). Zustand was chosen because:
 
-- **Minimal boilerplate.** A single `create()` call produces a hook — no providers, reducers, or context wrappers.
-- **Granular selectors.** Each component subscribes to the exact slice it needs (e.g., `useEventViewStore(s => s.events)`), avoiding unnecessary re-renders without manual memoization.
-- **Right-sized for the scope.** The store holds a flat list of events, a selection ID, and column filters. Redux or a context-based approach would add ceremony without benefit at this scale.
+- **Minimal boilerplate.** A single `create()` call produces a hook with no providers, reducers, or context wrappers.
+- **Granular selectors.** Each component subscribes to the exact slice it needs (e.g., `useEventViewStore((s) => s.events)`), avoiding unnecessary re-renders.
+- **Right-sized for the scope.** The store holds the event list, selection ID, and column filters.
 
 ## Data Flow
 - `useEventViewStore` holds one canonical `events` list.
 - `DataGrid` and `Timeline` are derived views of that same source.
-- Creating a new event from the form prepends to `events`, so both views update immediately.
-- Selection (`selectedEventId`) is store-level and shared by grid + timeline for sync behavior.
+- Creating a new event prepends to `events`, so both views update immediately.
+- Selection (`selectedEventId`) is shared by grid + timeline.
 - Editing an event updates it in-place; both views reflect changes immediately.
-- Column filter state is stored centrally so it persists across re-renders and could be shared across views.
+- Column filter state is centralized and reused across views.
 
 ## DataGrid Behavior
-- Processing pipeline is always: `global filter -> column filters -> sort -> paginate`.
-- Global search applies across visible columns.
+- Processing pipeline is always: `column filters -> sort -> paginate`.
 - Per-column filters allow filtering individual columns independently.
 - Sorting is stable (ties preserve original order).
 - Column visibility is controlled via DropdownMenu checkboxes.
 - Last visible column cannot be hidden (guard against 0-column table).
+- Columns are resizable by drag, with keyboard resize support on handles.
 
 ## Timeline Accessibility
 - Timeline items are keyboard focusable/selectable.
@@ -44,14 +45,13 @@ The app uses **Zustand** for global state (`src/state/useEventViewStore.ts`). Zu
   - `Left / Right` jumps to the adjacent day group (same relative position, clamped).
 - Enter/Space selects the focused item.
 - `aria-live` polite announcements include group label, title, position, and time.
-  Example: `Feb 17, 2026 - Door Forced Open, 3 of 7, 08:30`.
 
 ## EventForm Accessibility
 - Submit validation checks required title and valid date/time.
 - On invalid submit, focus moves to first invalid field in deterministic order:
   title, then date/time.
 - Inline field errors are shown with `aria-invalid` and connected via `aria-describedby`.
-- Successful submit updates a polite `role="status"` live region.
+- Success feedback is displayed in an app-level status region.
 
 ## Trade-offs / Not Implemented
 - No data virtualization in `DataGrid` (acceptable for current demo scale).
