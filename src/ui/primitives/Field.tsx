@@ -11,11 +11,16 @@ export function Field({ label, htmlFor, error, children }: FieldProps) {
   const errorId = htmlFor && error ? `${htmlFor}-error` : undefined
 
   const child = Children.only(children)
+  const reactChild = child as ReactElement<Record<string, unknown>>
   const enhanced =
     errorId && isValidElement(child)
-      ? cloneElement(child as ReactElement<Record<string, unknown>>, {
-          'aria-describedby': errorId,
-        })
+      ? cloneElement(child as ReactElement<Record<string, unknown>>, (() => {
+          const existing = String(reactChild.props['aria-describedby'] ?? '').trim()
+          const merged = existing
+            ? Array.from(new Set(`${existing} ${errorId}`.split(/\s+/))).join(' ')
+            : errorId
+          return { 'aria-describedby': merged }
+        })())
       : child
 
   return (

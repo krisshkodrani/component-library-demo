@@ -62,7 +62,7 @@ export function DropdownMenuCheckboxItem({
       {...props}
     >
       <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-slate-700">
-        <DropdownMenuPrimitive.ItemIndicator>x</DropdownMenuPrimitive.ItemIndicator>
+        <DropdownMenuPrimitive.ItemIndicator>{'\u2713'}</DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
