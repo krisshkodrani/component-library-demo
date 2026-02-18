@@ -1,4 +1,4 @@
-# Event Management Demo
+# Component Library Demo
 
 ## Setup & Run
 - Install dependencies: `npm install`
