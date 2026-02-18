@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { severityToVariant, type Event } from '../shared'
 import { useEventViewStore } from '../state/useEventViewStore'
-import { DataGrid, EventForm, Timeline, type ColumnDef, type EventDraft } from '../ui'
+import { DataGrid, ErrorBoundary, EventForm, Timeline, type ColumnDef, type EventDraft } from '../ui'
 import { applyColumnFilters } from '../ui/DataGrid/utils'
 import { Badge } from '../ui/primitives/Badge'
 import { Button } from '../ui/primitives/Button'
@@ -103,6 +103,14 @@ export function DemoApp() {
           ),
         filterValue: (row) => row.severity ?? '',
         filterable: true,
+      },
+      {
+        id: 'description',
+        header: 'Description',
+        accessor: (row) => row.description ?? '-',
+        sortValue: (row) => row.description ?? '',
+        filterable: true,
+        initialHidden: true,
       },
     ],
     [],
@@ -224,18 +232,20 @@ export function DemoApp() {
               <Button variant="primary">New Event</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New Event</DialogTitle>
-                <DialogDescription>
-                  Create a new event using the form below.
-                </DialogDescription>
-              </DialogHeader>
-              <EventForm
-                mode="add"
-                autoFocusTitle
-                onSave={handleNewEventSave}
-                onCancel={() => setIsNewEventOpen(false)}
-              />
+              <ErrorBoundary>
+                <DialogHeader>
+                  <DialogTitle>New Event</DialogTitle>
+                  <DialogDescription>
+                    Create a new event using the form below.
+                  </DialogDescription>
+                </DialogHeader>
+                <EventForm
+                  mode="add"
+                  autoFocusTitle
+                  onSave={handleNewEventSave}
+                  onCancel={() => setIsNewEventOpen(false)}
+                />
+              </ErrorBoundary>
             </DialogContent>
           </Dialog>
         </div>
@@ -243,26 +253,28 @@ export function DemoApp() {
 
       <Dialog open={editingEvent !== null} onOpenChange={(open) => { if (!open) setEditingEvent(null) }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>
-              Update the event details below.
-            </DialogDescription>
-          </DialogHeader>
-          {editingEvent && (
-            <EventForm
-              mode="edit"
-              autoFocusTitle
-              initialValue={{
-                title: editingEvent.title,
-                dateISO: editingEvent.dateISO,
-                description: editingEvent.description,
-                severity: editingEvent.severity,
-              }}
-              onSave={handleEditSave}
-              onCancel={() => setEditingEvent(null)}
-            />
-          )}
+          <ErrorBoundary>
+            <DialogHeader>
+              <DialogTitle>Edit Event</DialogTitle>
+              <DialogDescription>
+                Update the event details below.
+              </DialogDescription>
+            </DialogHeader>
+            {editingEvent && (
+              <EventForm
+                mode="edit"
+                autoFocusTitle
+                initialValue={{
+                  title: editingEvent.title,
+                  dateISO: editingEvent.dateISO,
+                  description: editingEvent.description,
+                  severity: editingEvent.severity,
+                }}
+                onSave={handleEditSave}
+                onCancel={() => setEditingEvent(null)}
+              />
+            )}
+          </ErrorBoundary>
         </DialogContent>
       </Dialog>
 
@@ -273,20 +285,22 @@ export function DemoApp() {
             <p className="text-sm text-slate-600">Events: {gridEvents.length}</p>
           </header>
           <div className="min-h-0 flex-1">
-            <DataGrid
-              rows={gridEvents}
-              columns={gridColumns}
-              columnFilters={columnFilters}
-              onColumnFilterChange={setColumnFilter}
-              totalRowsCount={visibleEvents.length}
-              toolbarStart={simulationControls}
-              isLoading={simulateLoading}
-              error={simulateError ? 'Unable to load events. Please retry.' : null}
-              emptyMessage="No matching events."
-              getRowId={(event) => event.id}
-              selectedRowId={selectedEventId}
-              onRowClick={(event) => setSelectedEventId(event.id)}
-            />
+            <ErrorBoundary>
+              <DataGrid
+                rows={gridEvents}
+                columns={gridColumns}
+                columnFilters={columnFilters}
+                onColumnFilterChange={setColumnFilter}
+                totalRowsCount={visibleEvents.length}
+                toolbarStart={simulationControls}
+                isLoading={simulateLoading}
+                error={simulateError ? 'Unable to load events. Please retry.' : null}
+                emptyMessage="No matching events."
+                getRowId={(event) => event.id}
+                selectedRowId={selectedEventId}
+                onRowClick={(event) => setSelectedEventId(event.id)}
+              />
+            </ErrorBoundary>
           </div>
         </article>
 
@@ -316,30 +330,32 @@ export function DemoApp() {
             </p>
           </header>
           <div className="min-h-0 flex-1 overflow-auto pr-1">
-            {simulateError ? (
-              <div
-                className="rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700"
-                role="alert"
-              >
-                Unable to load events. Please retry.
-              </div>
-            ) : simulateLoading ? (
-              <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
-                Loading...
-              </div>
-            ) : timelineEvents.length === 0 ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-                No matching events.
-              </div>
-            ) : (
-              <Timeline
-                events={timelineEvents}
-                selectedId={selectedEventId}
-                onSelect={(id) => setSelectedEventId(id)}
-                sortDirection={timelineSortDirection}
-                instructionsId={timelineInstructionsId}
-              />
-            )}
+            <ErrorBoundary>
+              {simulateError ? (
+                <div
+                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700"
+                  role="alert"
+                >
+                  Unable to load events. Please retry.
+                </div>
+              ) : simulateLoading ? (
+                <div className="rounded-lg border border-slate-200 bg-white px-4 py-6 text-sm text-slate-600">
+                  Loading...
+                </div>
+              ) : timelineEvents.length === 0 ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+                  No matching events.
+                </div>
+              ) : (
+                <Timeline
+                  events={timelineEvents}
+                  selectedId={selectedEventId}
+                  onSelect={(id) => setSelectedEventId(id)}
+                  sortDirection={timelineSortDirection}
+                  instructionsId={timelineInstructionsId}
+                />
+              )}
+            </ErrorBoundary>
           </div>
         </article>
       </section>

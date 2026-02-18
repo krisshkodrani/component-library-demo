@@ -1,3 +1,4 @@
+export { ErrorBoundary } from './primitives/ErrorBoundary'
 export { DataGrid } from './DataGrid'
 export type { ColumnDef } from './DataGrid'
 export { EventForm } from './EventForm'

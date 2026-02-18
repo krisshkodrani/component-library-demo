@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import type { ReactNode } from 'react'
 import { useId, useMemo, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
@@ -10,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../radix/DropdownMenu'
-import type { ColumnDef } from './types'
+import type { ColumnDef, DataGridProps } from './types'
 import { applyColumnFilters, applySort, paginate, type ColumnFilterState, type SortState } from './utils'
 
 function getInitialHiddenColumnIds<T>(columns: ColumnDef<T>[]): Set<string> {
@@ -97,22 +96,7 @@ export function DataGrid<T>({
   onColumnFilterChange,
   totalRowsCount,
   toolbarStart,
-}: {
-  rows: T[]
-  columns: ColumnDef<T>[]
-  pageSize?: number
-  initialPage?: number
-  isLoading?: boolean
-  error?: string | null
-  emptyMessage?: string
-  getRowId?: (row: T) => string
-  selectedRowId?: string | null
-  onRowClick?: (row: T) => void
-  columnFilters?: ColumnFilterState
-  onColumnFilterChange?: (columnId: string, value: string) => void
-  totalRowsCount?: number
-  toolbarStart?: ReactNode
-}) {
+}: DataGridProps<T>) {
   const instanceId = useId()
   const safePageSize = Math.max(1, Math.floor(pageSize))
   const totalRows = totalRowsCount ?? rows.length
@@ -431,7 +415,7 @@ export function DataGrid<T>({
       </div>
 
       {!error && !isLoading && sortedRows.length > 0 ? (
-        <div className="flex items-center justify-between gap-3">
+        <nav aria-label="Pagination" className="flex items-center justify-between gap-3">
           <Button
             variant="secondary"
             onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -451,7 +435,7 @@ export function DataGrid<T>({
           >
             Next
           </Button>
-        </div>
+        </nav>
       ) : null}
     </div>
   )

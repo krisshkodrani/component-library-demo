@@ -1,2 +1,2 @@
 export { DataGrid } from './DataGrid'
-export type { ColumnDef } from './types'
+export type { ColumnDef, DataGridProps } from './types'

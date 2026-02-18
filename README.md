@@ -13,12 +13,21 @@
 
 This mirrors an Nx-like separation of concerns (domain/shared/ui/app layers) without introducing Nx tooling overhead.
 
+## State Management
+
+The app uses **Zustand** for global state (`src/state/useEventViewStore.ts`). Zustand was chosen because:
+
+- **Minimal boilerplate.** A single `create()` call produces a hook — no providers, reducers, or context wrappers.
+- **Granular selectors.** Each component subscribes to the exact slice it needs (e.g., `useEventViewStore(s => s.events)`), avoiding unnecessary re-renders without manual memoization.
+- **Right-sized for the scope.** The store holds a flat list of events, a selection ID, and column filters. Redux or a context-based approach would add ceremony without benefit at this scale.
+
 ## Data Flow
-- `DemoApp` holds one canonical `events` list in state.
+- `useEventViewStore` holds one canonical `events` list.
 - `DataGrid` and `Timeline` are derived views of that same source.
-- Creating a new event from the dialog prepends to `events`, so both views update immediately.
-- Selection (`selectedEventId`) is app-level and shared by grid + timeline for sync behavior.
+- Creating a new event from the form prepends to `events`, so both views update immediately.
+- Selection (`selectedEventId`) is store-level and shared by grid + timeline for sync behavior.
 - Editing an event updates it in-place; both views reflect changes immediately.
+- Column filter state is stored centrally so it persists across re-renders and could be shared across views.
 
 ## DataGrid Behavior
 - Processing pipeline is always: `global filter -> column filters -> sort -> paginate`.

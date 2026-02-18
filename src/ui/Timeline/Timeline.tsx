@@ -127,6 +127,11 @@ export function Timeline({
                       })}
                     </time>
                   </div>
+                  {event.description ? (
+                    <p className="mt-1 truncate text-xs text-slate-500">
+                      {event.description}
+                    </p>
+                  ) : null}
                   {event.severity ? (
                     <div className="mt-2">
                       <Badge variant={severityToVariant[event.severity]}>

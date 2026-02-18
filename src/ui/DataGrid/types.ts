@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { ColumnFilterState } from './utils'
 
 export type ColumnDef<T> = {
   id: string
@@ -10,4 +11,21 @@ export type ColumnDef<T> = {
   filterable?: boolean
   hideable?: boolean
   initialHidden?: boolean
+}
+
+export type DataGridProps<T> = {
+  rows: T[]
+  columns: ColumnDef<T>[]
+  pageSize?: number
+  initialPage?: number
+  isLoading?: boolean
+  error?: string | null
+  emptyMessage?: string
+  getRowId?: (row: T) => string
+  selectedRowId?: string | null
+  onRowClick?: (row: T) => void
+  columnFilters?: ColumnFilterState
+  onColumnFilterChange?: (columnId: string, value: string) => void
+  totalRowsCount?: number
+  toolbarStart?: ReactNode
 }
