@@ -1,6 +1,3 @@
-export type TimelineEvent = {
-  id: string
-  title: string
-  dateISO: string
-  severity?: 'low' | 'medium' | 'high'
-}
+import type { Event } from '../../shared'
+
+export type TimelineEvent = Pick<Event, 'id' | 'title' | 'dateISO' | 'severity'>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
@@ -34,6 +34,12 @@ export function EventForm({
   onCancel,
   autoFocusTitle = false,
 }: EventFormProps) {
+  const id = useId()
+  const titleId = `${id}-title`
+  const dateId = `${id}-date`
+  const severityId = `${id}-severity`
+  const descriptionId = `${id}-description`
+
   const initialDateISO = initialValue?.dateISO ?? new Date().toISOString()
   const [draft, setDraft] = useState<EventDraft>({
     title: initialValue?.title ?? '',
@@ -45,7 +51,6 @@ export function EventForm({
     toLocalDateTimeInputValue(initialDateISO),
   )
   const [errors, setErrors] = useState<EventFormErrors>({})
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement | null>(null)
   const dateRef = useRef<HTMLInputElement | null>(null)
 
@@ -76,7 +81,6 @@ export function EventForm({
         const nextErrors = validate(draft, dateInputValue)
         if (Object.keys(nextErrors).length > 0) {
           setErrors(nextErrors)
-          setSuccessMessage(null)
           queueMicrotask(() => {
             if (nextErrors.title) {
               titleRef.current?.focus()
@@ -92,30 +96,17 @@ export function EventForm({
 
         setErrors({})
         onSave(draft)
-        setSuccessMessage(mode === 'add' ? 'Event created.' : 'Event saved.')
       }}
     >
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="min-h-5 text-sm text-emerald-700"
-      >
-        {successMessage ?? ''}
-      </div>
-
-      <Field label="Title" htmlFor="event-form-title" error={errors.title}>
+      <Field label="Title" htmlFor={titleId} error={errors.title}>
         <Input
           ref={titleRef}
-          id="event-form-title"
+          id={titleId}
           autoFocus={autoFocusTitle}
           value={draft.title}
           aria-invalid={Boolean(errors.title)}
           onChange={(event) => {
             setDraft((current) => ({ ...current, title: event.target.value }))
-            if (successMessage) {
-              setSuccessMessage(null)
-            }
             if (errors.title) {
               setErrors((current) => ({ ...current, title: undefined }))
             }
@@ -124,19 +115,16 @@ export function EventForm({
         />
       </Field>
 
-      <Field label="Date & Time" htmlFor="event-form-date" error={errors.dateISO}>
+      <Field label="Date & Time" htmlFor={dateId} error={errors.dateISO}>
         <Input
           ref={dateRef}
-          id="event-form-date"
+          id={dateId}
           type="datetime-local"
           value={dateInputValue}
           aria-invalid={Boolean(errors.dateISO)}
           onChange={(event) => {
             const value = event.target.value
             setDateInputValue(value)
-            if (successMessage) {
-              setSuccessMessage(null)
-            }
             if (errors.dateISO) {
               setErrors((current) => ({ ...current, dateISO: undefined }))
             }
@@ -151,9 +139,9 @@ export function EventForm({
         />
       </Field>
 
-      <Field label="Severity" htmlFor="event-form-severity">
+      <Field label="Severity" htmlFor={severityId}>
         <select
-          id="event-form-severity"
+          id={severityId}
           value={draft.severity ?? ''}
           onChange={(event) => {
             const value = event.target.value
@@ -162,9 +150,6 @@ export function EventForm({
               ...current,
               severity: match && match.value !== '' ? match.value : undefined,
             }))
-            if (successMessage) {
-              setSuccessMessage(null)
-            }
           }}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
         >
@@ -176,18 +161,15 @@ export function EventForm({
         </select>
       </Field>
 
-      <Field label="Description" htmlFor="event-form-description">
+      <Field label="Description" htmlFor={descriptionId}>
         <textarea
-          id="event-form-description"
+          id={descriptionId}
           value={draft.description ?? ''}
           onChange={(event) => {
             setDraft((current) => ({
               ...current,
               description: event.target.value,
             }))
-            if (successMessage) {
-              setSuccessMessage(null)
-            }
           }}
           rows={3}
           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
-import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { Button } from '../primitives/Button'
 import { Field } from '../primitives/Field'
 import { Input } from '../primitives/Input'
@@ -10,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '../radix/DropdownMenu'
 import type { ColumnDef } from './types'
-import { applyColumnFilters, applyGlobalFilter, applySort, paginate, type ColumnFilterState, type SortState } from './utils'
+import { applyColumnFilters, applySort, paginate, type ColumnFilterState, type SortState } from './utils'
 
 function getInitialHiddenColumnIds<T>(columns: ColumnDef<T>[]): Set<string> {
   const hidden = new Set<string>()
@@ -30,10 +31,26 @@ function getInitialHiddenColumnIds<T>(columns: ColumnDef<T>[]): Set<string> {
 
 function SortIndicator({ direction }: { direction: 'asc' | 'desc' | null }) {
   return (
-    <span className="w-3 text-xs text-slate-500" aria-hidden="true">
-      {direction === 'asc' ? '\u25B2' : direction === 'desc' ? '\u25BC' : ''}
+    <span
+      className={clsx(
+        'w-3 text-xs',
+        direction ? 'text-slate-600' : 'text-slate-300',
+      )}
+      aria-hidden="true"
+    >
+      {direction === 'asc' ? '\u25B2' : direction === 'desc' ? '\u25BC' : '\u2195'}
     </span>
   )
+}
+
+function getAriaSortValue<T>(
+  column: ColumnDef<T>,
+  sortState: SortState,
+): 'ascending' | 'descending' | 'none' | undefined {
+  const isSortable = column.sortable ?? Boolean(column.sortValue)
+  if (!isSortable) return undefined
+  if (sortState?.columnId !== column.id) return 'none'
+  return sortState.direction === 'asc' ? 'ascending' : 'descending'
 }
 
 function SortableHeader<T>({
@@ -76,6 +93,10 @@ export function DataGrid<T>({
   getRowId,
   selectedRowId = null,
   onRowClick,
+  columnFilters: columnFiltersProp,
+  onColumnFilterChange,
+  totalRowsCount,
+  toolbarStart,
 }: {
   rows: T[]
   columns: ColumnDef<T>[]
@@ -87,9 +108,14 @@ export function DataGrid<T>({
   getRowId?: (row: T) => string
   selectedRowId?: string | null
   onRowClick?: (row: T) => void
+  columnFilters?: ColumnFilterState
+  onColumnFilterChange?: (columnId: string, value: string) => void
+  totalRowsCount?: number
+  toolbarStart?: ReactNode
 }) {
+  const instanceId = useId()
   const safePageSize = Math.max(1, Math.floor(pageSize))
-  const totalRows = rows.length
+  const totalRows = totalRowsCount ?? rows.length
   const initialTotalPages = Math.max(1, Math.ceil(totalRows / safePageSize))
   const normalizedInitialPage = Math.min(
     initialTotalPages,
@@ -97,11 +123,12 @@ export function DataGrid<T>({
   )
   const [page, setPage] = useState(normalizedInitialPage)
   const [sortState, setSortState] = useState<SortState>(null)
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [columnFilters, setColumnFilters] = useState<ColumnFilterState>({})
+  const [internalColumnFilters, setInternalColumnFilters] = useState<ColumnFilterState>({})
+  const columnFilters = columnFiltersProp ?? internalColumnFilters
   const [hiddenColumnIds, setHiddenColumnIds] = useState<Set<string>>(() =>
     getInitialHiddenColumnIds(columns),
   )
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
 
   const visibleColumns = useMemo(
     () => columns.filter((column) => !hiddenColumnIds.has(column.id)),
@@ -119,10 +146,8 @@ export function DataGrid<T>({
   )
 
   const filteredRows = useMemo(() => {
-    let result = applyGlobalFilter(rows, visibleColumns, globalFilter)
-    result = applyColumnFilters(result, visibleColumns, columnFilters)
-    return result
-  }, [rows, visibleColumns, globalFilter, columnFilters])
+    return applyColumnFilters(rows, visibleColumns, columnFilters)
+  }, [rows, visibleColumns, columnFilters])
 
   const sortedRows = useMemo(
     () => applySort(filteredRows, sortState, visibleColumns),
@@ -176,7 +201,13 @@ export function DataGrid<T>({
   }
 
   function handleColumnFilterChange(columnId: string, value: string) {
-    setColumnFilters((current) => {
+    if (onColumnFilterChange) {
+      onColumnFilterChange(columnId, value)
+      setPage(1)
+      return
+    }
+
+    setInternalColumnFilters((current) => {
       if (!value.trim()) {
         return Object.fromEntries(
           Object.entries(current).filter(([key]) => key !== columnId),
@@ -187,29 +218,53 @@ export function DataGrid<T>({
     setPage(1)
   }
 
+  function adjustColumnWidth(columnId: string, delta: number) {
+    setColumnWidths((current) => {
+      const base = current[columnId] ?? 180
+      const nextWidth = Math.max(120, Math.min(640, base + delta))
+      return { ...current, [columnId]: nextWidth }
+    })
+  }
+
+  function handleResizeStart(
+    event: React.PointerEvent<HTMLSpanElement>,
+    columnId: string,
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const header = event.currentTarget.closest('th')
+    const startWidth = header instanceof HTMLElement ? header.offsetWidth : 180
+    const startX = event.clientX
+
+    function onMove(moveEvent: PointerEvent) {
+      const delta = moveEvent.clientX - startX
+      const nextWidth = Math.max(120, Math.min(640, startWidth + delta))
+      setColumnWidths((current) => ({ ...current, [columnId]: nextWidth }))
+    }
+
+    function onUp() {
+      globalThis.removeEventListener('pointermove', onMove)
+      globalThis.removeEventListener('pointerup', onUp)
+    }
+
+    globalThis.addEventListener('pointermove', onMove)
+    globalThis.addEventListener('pointerup', onUp)
+  }
+
   const hasColumnFilters = filterableColumns.length > 0
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div className="w-full sm:max-w-sm">
-            <Field label="Search" htmlFor="grid-search">
-              <Input
-                id="grid-search"
-                placeholder="Search rows..."
-                value={globalFilter}
-                onChange={(event) => {
-                  setGlobalFilter(event.target.value)
-                  setPage(1)
-                }}
-              />
-            </Field>
-          </div>
-
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>{toolbarStart}</div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" className="self-start sm:self-auto">
+              <Button
+                variant="secondary"
+                className="self-start px-3 py-1.5 text-xs sm:self-auto"
+              >
                 Columns
               </Button>
             </DropdownMenuTrigger>
@@ -239,9 +294,9 @@ export function DataGrid<T>({
           <div className="flex flex-wrap gap-2">
             {filterableColumns.map((column) => (
               <div key={column.id} className="w-full sm:w-auto sm:min-w-36">
-                <Field label={column.header} htmlFor={`col-filter-${column.id}`}>
+                <Field label={column.header} htmlFor={`${instanceId}-col-${column.id}`}>
                   <Input
-                    id={`col-filter-${column.id}`}
+                    id={`${instanceId}-col-${column.id}`}
                     placeholder={`Filter ${column.header.toLowerCase()}...`}
                     value={columnFilters[column.id] ?? ''}
                     onChange={(e) => handleColumnFilterChange(column.id, e.target.value)}
@@ -253,7 +308,7 @@ export function DataGrid<T>({
           </div>
         )}
 
-        <p className="text-xs font-medium text-slate-600">
+        <p className="text-xs font-medium text-slate-600" aria-live="polite" aria-atomic="true">
           Showing {totalFilteredRows} of {totalRows}
         </p>
       </div>
@@ -276,20 +331,61 @@ export function DataGrid<T>({
           </div>
         ) : (
           <div className="h-full overflow-auto rounded-lg border border-slate-200 bg-white">
-            <table className="min-w-[640px] w-full border-collapse text-left text-sm">
+            <table className="w-full table-fixed border-collapse text-left text-sm">
+              <colgroup>
+                {visibleColumns.map((column) => (
+                  <col
+                    key={column.id}
+                    style={
+                      columnWidths[column.id]
+                        ? { width: `${columnWidths[column.id]}px` }
+                        : undefined
+                    }
+                  />
+                ))}
+              </colgroup>
               <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
                 <tr>
                   {visibleColumns.map((column) => (
                     <th
                       key={column.id}
                       scope="col"
-                      className="border-b border-slate-200 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-600"
+                      aria-sort={getAriaSortValue(column, sortState)}
+                      className={clsx(
+                        'relative border-b border-r border-slate-200 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-600 last:border-r-0',
+                        (column.sortable ?? Boolean(column.sortValue)) &&
+                          'cursor-pointer hover:bg-slate-100/70',
+                      )}
                     >
-                      <SortableHeader
-                        column={column}
-                        sortState={sortState}
-                        onToggle={handleSortToggle}
-                      />
+                      <div className="truncate">
+                        <SortableHeader
+                          column={column}
+                          sortState={sortState}
+                          onToggle={handleSortToggle}
+                        />
+                      </div>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label={`Resize ${column.header} column`}
+                        aria-valuemin={120}
+                        aria-valuemax={640}
+                        aria-valuenow={columnWidths[column.id] ?? 180}
+                        tabIndex={0}
+                        onPointerDown={(event) => handleResizeStart(event, column.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowLeft') {
+                            event.preventDefault()
+                            adjustColumnWidth(column.id, -16)
+                          } else if (event.key === 'ArrowRight') {
+                            event.preventDefault()
+                            adjustColumnWidth(column.id, 16)
+                          }
+                        }}
+                        className="absolute right-0 top-0 z-10 h-full w-3 cursor-col-resize touch-none select-none hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600"
+                      >
+                        <span className="absolute inset-y-1 left-1.5 w-px bg-slate-300" />
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -300,15 +396,28 @@ export function DataGrid<T>({
                   return (
                     <tr
                       key={rowId ?? rowIndex}
+                      tabIndex={onRowClick ? 0 : undefined}
+                      aria-selected={
+                        onRowClick && rowId ? selectedRowId === rowId : undefined
+                      }
                       onClick={onRowClick ? () => onRowClick(row) : undefined}
+                      onKeyDown={onRowClick ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onRowClick(row)
+                        }
+                      } : undefined}
                       className={clsx(
                         'border-b border-slate-100',
-                        onRowClick && 'cursor-pointer hover:bg-slate-50/80',
+                        onRowClick && 'cursor-pointer hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600',
                         rowId && selectedRowId === rowId && 'bg-blue-50/70',
                       )}
                     >
                       {visibleColumns.map((column) => (
-                        <td key={column.id} className="px-3 py-2.5 text-slate-700">
+                        <td
+                          key={column.id}
+                          className="truncate px-3 py-2.5 text-slate-700"
+                        >
                           {column.accessor(row)}
                         </td>
                       ))}

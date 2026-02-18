@@ -10,15 +10,22 @@ export function Timeline({
   events,
   selectedId = null,
   onSelect,
+  sortDirection = 'desc',
+  instructionsId,
 }: {
   events: TimelineEvent[]
   selectedId?: string | null
   onSelect?: (id: string) => void
+  sortDirection?: 'asc' | 'desc'
+  instructionsId?: string
 }) {
-  const groups = useMemo(() => groupEventsByDay(events), [events])
+  const groups = useMemo(
+    () => groupEventsByDay(events, sortDirection),
+    [events, sortDirection],
+  )
   const [activeId, setActiveId] = useState<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
-  const itemRefs = useRef<Record<string, HTMLLIElement | null>>({})
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({})
 
   function announceForId(id: string) {
     if (activeId === id) {
@@ -51,7 +58,12 @@ export function Timeline({
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      role="region"
+      aria-label="Timeline events"
+      aria-describedby={instructionsId}
+    >
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
       </div>
@@ -67,58 +79,62 @@ export function Timeline({
             {group.items.map((event) => (
               <li
                 key={event.id}
-                ref={(element) => {
-                  itemRefs.current[event.id] = element
-                }}
-                onClick={(eventClick) => {
-                  announceForId(event.id)
-                  eventClick.currentTarget.focus()
-                  onSelect?.(event.id)
-                }}
-                onFocus={() => announceForId(event.id)}
-                className={clsx(
-                  'rounded-lg border px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
-                  onSelect && 'cursor-pointer hover:bg-slate-100',
-                  event.id === selectedId
-                    ? 'border-blue-200 bg-blue-50/70'
-                    : 'border-slate-200 bg-slate-50',
-                )}
-                tabIndex={onSelect ? 0 : -1}
-                onKeyDown={(eventKey) => {
-                  if (eventKey.key === 'Enter' || eventKey.key === ' ') {
-                    eventKey.preventDefault()
-                    onSelect?.(event.id)
-                    announceForId(event.id)
-                    return
-                  }
-
-                  if (
-                    eventKey.key === 'ArrowDown' ||
-                    eventKey.key === 'ArrowRight' ||
-                    eventKey.key === 'ArrowUp' ||
-                    eventKey.key === 'ArrowLeft'
-                  ) {
-                    eventKey.preventDefault()
-                    focusByKey(event.id, eventKey.key)
-                  }
-                }}
+                className="list-none"
               >
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                  <p className="text-sm font-medium text-slate-900">{event.title}</p>
-                  <time className="text-xs text-slate-600">
-                    {new Date(event.dateISO).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </time>
-                </div>
-                {event.severity ? (
-                  <div className="mt-2">
-                    <Badge variant={severityToVariant[event.severity]}>
-                      {event.severity}
-                    </Badge>
+                <button
+                  type="button"
+                  ref={(element) => {
+                    itemRefs.current[event.id] = element
+                  }}
+                  onClick={() => {
+                    announceForId(event.id)
+                    onSelect?.(event.id)
+                  }}
+                  onFocus={() => announceForId(event.id)}
+                  className={clsx(
+                    'w-full rounded-lg border px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600',
+                    onSelect && 'cursor-pointer hover:bg-slate-100',
+                    event.id === selectedId
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-200 bg-slate-50',
+                  )}
+                  aria-pressed={onSelect ? event.id === selectedId : undefined}
+                  onKeyDown={(eventKey) => {
+                    if (eventKey.key === 'Enter' || eventKey.key === ' ') {
+                      eventKey.preventDefault()
+                      onSelect?.(event.id)
+                      announceForId(event.id)
+                      return
+                    }
+
+                    if (
+                      eventKey.key === 'ArrowDown' ||
+                      eventKey.key === 'ArrowRight' ||
+                      eventKey.key === 'ArrowUp' ||
+                      eventKey.key === 'ArrowLeft'
+                    ) {
+                      eventKey.preventDefault()
+                      focusByKey(event.id, eventKey.key)
+                    }
+                  }}
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <p className="text-sm font-medium text-slate-900">{event.title}</p>
+                    <time className="text-xs text-slate-600">
+                      {new Date(event.dateISO).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </time>
                   </div>
-                ) : null}
+                  {event.severity ? (
+                    <div className="mt-2">
+                      <Badge variant={severityToVariant[event.severity]}>
+                        {event.severity}
+                      </Badge>
+                    </div>
+                  ) : null}
+                </button>
               </li>
             ))}
           </ul>
